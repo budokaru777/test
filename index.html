@@ -2,95 +2,126 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>画像認識シューティングテスト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>担任救出！ARコースターシューティング</title>
 
-  <!-- ライブラリ読み込み -->
+  <!-- 安定動作版ライブラリ -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-    body, html { width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
+    body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fff; }
 
-    /* スタートボタン */
+    /* スタート画面 (明るい白背景ベース) */
     #start-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
-      background: #111; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; color: #fff; text-align: center; padding: 20px;
+      background: rgba(255, 255, 255, 0.95); display: flex; flex-direction: column;
+      justify-content: center; align-items: center; color: #0088cc; text-align: center; padding: 25px;
+      backdrop-filter: blur(5px);
+    }
+    #start-overlay h2 {
+      font-size: 26px; font-weight: 800; color: #0099e6; letter-spacing: 1px; margin-bottom: 10px;
+    }
+    #start-overlay p {
+      font-size: 14px; color: #557799; line-height: 1.5;
     }
     #start-btn {
-      background: #00ffcc; color: #000; border: none; padding: 18px 36px;
-      font-size: 20px; font-weight: bold; border-radius: 30px; margin-top: 20px; cursor: pointer;
+      background: #00aaff; color: #fff; border: none; padding: 18px 45px;
+      font-size: 20px; font-weight: bold; border-radius: 40px; margin-top: 30px;
+      box-shadow: 0 4px 15px rgba(0, 170, 255, 0.4); cursor: pointer;
+      transition: transform 0.1s ease;
     }
+    #start-btn:active { transform: scale(0.96); }
 
-    /* 状態確認用デバッグログ（画面上部） */
-    #status-bar {
-      position: absolute; top: 10px; left: 10px; right: 10px; z-index: 100;
-      background: rgba(0, 0, 0, 0.85); color: #fff; padding: 12px;
-      border-radius: 8px; font-size: 14px; border: 1px solid #333;
-    }
-    #target-state { font-weight: bold; color: #ff3366; }
-
-    /* HUD (スコア表示と照準) */
+    /* UIレイヤー (HUD) */
     #ui-layer {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
       display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
       pointer-events: none;
     }
-    .score-display {
-      position: absolute; top: 70px; left: 10px;
-      color: #00ffcc; font-size: 24px; font-weight: bold;
-      text-shadow: 0 0 10px rgba(0,255,204,0.8);
+
+    .hud-header {
+      display: flex; justify-content: space-between; align-items: center;
+      color: #00aaff; font-size: 20px; font-weight: 800;
+      background: rgba(255, 255, 255, 0.85); padding: 12px 20px; border-radius: 30px;
+      box-shadow: 0 2px 10px rgba(0, 150, 255, 0.15); border: 1px solid rgba(0, 170, 255, 0.3);
     }
+
+    /* 中央照準 (水色デザイン) */
     .crosshair {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 60px; height: 60px; border: 2px solid rgba(0, 255, 204, 0.6); border-radius: 50%;
-      pointer-events: none;
+      width: 64px; height: 64px; border: 3px solid rgba(0, 170, 255, 0.8); border-radius: 50%;
+      pointer-events: none; box-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
     }
     .crosshair::after {
       content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 8px; height: 8px; background: #ff0055; border-radius: 50%;
+      width: 10px; height: 10px; background: #00aaff; border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0, 170, 255, 0.8);
     }
 
-    /* ヒット＆ショット時の画面フラッシュ */
+    /* 射撃・命中演出フラッシュ */
     #hit-flash {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
-      background: rgba(0, 255, 100, 0.4); opacity: 0; transition: opacity 0.08s ease;
+      background: rgba(0, 200, 255, 0.3); opacity: 0; transition: opacity 0.08s ease;
       pointer-events: none;
     }
     #shot-flash {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4;
-      background: rgba(255, 255, 255, 0.2); opacity: 0; transition: opacity 0.05s ease;
+      background: rgba(255, 255, 255, 0.3); opacity: 0; transition: opacity 0.05s ease;
       pointer-events: none;
+    }
+
+    /* リザルト画面 (爽やかな白・水色基調) */
+    #result-modal {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
+      background: rgba(255, 255, 255, 0.96); color: #0077bb; display: none;
+      flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center;
+    }
+    #result-modal h1 { color: #0099e6; font-size: 30px; font-weight: 800; margin-bottom: 8px; }
+    #result-modal p { color: #6688aa; font-size: 15px; }
+    .score-box {
+      font-size: 42px; font-weight: 900; color: #00aaff; margin: 20px 0;
+      text-shadow: 0 2px 10px rgba(0, 170, 255, 0.2);
+    }
+    .btn-retry {
+      background: #00aaff; color: #fff; border: none; padding: 16px 40px;
+      font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 170, 255, 0.3);
     }
   </style>
 </head>
 <body>
 
-  <!-- 1. 起動用オーバーレイ -->
+  <!-- スタート画面 -->
   <div id="start-overlay">
-    <h2>画像認識テストプログラム</h2>
-    <p style="margin-top:10px; font-size:13px; color:#aaa;">カメラと音声を有効化します</p>
-    <button id="start-btn">テスト開始</button>
+    <h2>担任救出ミッション</h2>
+    <p>画面をタップしてカメラとサウンドを起動し、<br>ターゲットに狙いを定めて撃ち抜こう！</p>
+    <button id="start-btn">GAME START</button>
   </div>
 
-  <!-- 2. デバッグ用ステータス表示バー -->
-  <div id="status-bar">
-    <div>カメラ: <span id="cam-state">停止中</span></div>
-    <div>認識状態: <span id="target-state">未認識 (マーカーを探してください)</span></div>
-  </div>
-
-  <!-- 3. ゲームUI -->
+  <!-- HUD・スコア表示 -->
   <div id="ui-layer">
-    <div class="score-display">SCORE: <span id="score-val">0</span></div>
+    <div class="hud-header">
+      <div>SCORE: <span id="score-val">0</span></div>
+      <div>MISSION: 担任救出</div>
+    </div>
     <div class="crosshair"></div>
   </div>
 
+  <!-- エフェクト用レイヤー -->
   <div id="hit-flash"></div>
   <div id="shot-flash"></div>
 
-  <!-- 4. ARオブジェクト描画無しの純粋な認識用シーン -->
+  <!-- 終了画面 -->
+  <div id="result-modal">
+    <h1>MISSION COMPLETE!</h1>
+    <p>救出作戦が完了しました！</p>
+    <div class="score-box"><span id="final-score">0</span> <span style="font-size:20px;">PT</span></div>
+    <button class="btn-retry" onclick="location.reload()">もう一度リトライ</button>
+  </div>
+
+  <!-- AR Scene (認識システム) -->
   <a-scene 
     mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: yes;" 
     color-space="sRGB" 
@@ -98,7 +129,6 @@
     device-orientation-permission-ui="enabled: false">
     
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    <!-- 3Dモデル等の描画物は一切置かない -->
     <a-entity id="target-0" mindar-image-target="targetIndex: 0"></a-entity>
   </a-scene>
 
@@ -106,32 +136,31 @@
     let score = 0;
     let isTargetVisible = false;
     let isCoolingDown = false;
+    let isGameStarted = false;
 
-    const camState = document.getElementById('cam-state');
-    const targetState = document.getElementById('target-state');
     const scoreVal = document.getElementById('score-val');
     const hitFlash = document.getElementById('hit-flash');
     const shotFlash = document.getElementById('shot-flash');
+    const targetEntity = document.querySelector('#target-0');
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
-    const targetEntity = document.querySelector('#target-0');
 
     let audioCtx;
 
-    // 簡単なSE生成 (Web Audio API)
+    // 効果音生成 (Web Audio API)
     function playShotSE() {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
+      osc.stop(audioCtx.currentTime + 0.12);
     }
 
     function playHitSE() {
@@ -139,9 +168,9 @@
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'square';
-      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
       gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -149,7 +178,7 @@
       osc.stop(audioCtx.currentTime + 0.2);
     }
 
-    // 起動処理
+    // ゲーム開始処理
     startBtn.addEventListener('click', async () => {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') await audioCtx.resume();
@@ -158,10 +187,9 @@
       const arSystem = sceneEl.systems["mindar-image-system"];
 
       try {
-        camState.textContent = "起動中...";
         await arSystem.start();
 
-        // ビデオ画面のサイズ調整
+        // カメラ背景のフィッティング
         const video = document.querySelector('video');
         if (video) {
           video.style.position = 'absolute';
@@ -173,38 +201,33 @@
           video.style.zIndex = '1';
         }
 
-        camState.textContent = "🟢 正常動作中";
-        camState.style.color = "#00ffcc";
         startOverlay.style.display = 'none';
+        isGameStarted = true;
+
+        // 40秒でゲーム終了（リザルト表示）
+        setTimeout(() => {
+          document.getElementById('result-modal').style.display = 'flex';
+          document.getElementById('final-score').textContent = score;
+        }, 40000);
 
       } catch (err) {
-        camState.textContent = "❌ エラー: " + err.message;
-        camState.style.color = "#ff3366";
         alert("起動エラー: " + err.message);
       }
     });
 
-    // 画像認識判定イベント
-    targetEntity.addEventListener("targetFound", () => {
-      isTargetVisible = true;
-      targetState.textContent = "🟢 認識中！ (タップで撃てます)";
-      targetState.style.color = "#00ffcc";
-    });
+    // ターゲット検知・見失い時のフラグ切り替え
+    targetEntity.addEventListener("targetFound", () => { isTargetVisible = true; });
+    targetEntity.addEventListener("targetLost", () => { isTargetVisible = false; });
 
-    targetEntity.addEventListener("targetLost", () => {
-      isTargetVisible = false;
-      targetState.textContent = "未認識 (マーカーを探してください)";
-      targetState.style.color = "#ff3366";
-    });
-
-    // 画面タップ時の処理
+    // 画面タップで射撃
     window.addEventListener('pointerdown', (e) => {
-      if (startOverlay.style.display !== 'none') return;
+      if (!isGameStarted || e.target === startBtn || e.target.classList.contains('btn-retry')) return;
 
       playShotSE();
       shotFlash.style.opacity = '1';
       setTimeout(() => { shotFlash.style.opacity = '0'; }, 50);
 
+      // マーカーを捉えていれば得点追加
       if (isTargetVisible && !isCoolingDown) {
         score += 100;
         scoreVal.textContent = score;
