@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MindAR 認識テスト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>画像認識シューティングテスト</title>
 
+  <!-- ライブラリ読み込み -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
@@ -16,75 +17,151 @@
     #start-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
       background: #111; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; color: #fff; text-align: center;
+      justify-content: center; align-items: center; color: #fff; text-align: center; padding: 20px;
     }
     #start-btn {
-      background: #00ffcc; color: #000; border: none; padding: 20px 40px;
+      background: #00ffcc; color: #000; border: none; padding: 18px 36px;
       font-size: 20px; font-weight: bold; border-radius: 30px; margin-top: 20px; cursor: pointer;
     }
 
-    /* 状態表示ログメッセージ */
-    #log-box {
-      position: absolute; top: 10px; left: 10px; z-index: 100;
-      background: rgba(0,0,0,0.8); color: #00ffcc; padding: 12px;
-      border-radius: 8px; font-size: 14px; max-width: 90%; word-break: break-all;
+    /* 状態確認用デバッグログ（画面上部） */
+    #status-bar {
+      position: absolute; top: 10px; left: 10px; right: 10px; z-index: 100;
+      background: rgba(0, 0, 0, 0.85); color: #fff; padding: 12px;
+      border-radius: 8px; font-size: 14px; border: 1px solid #333;
+    }
+    #target-state { font-weight: bold; color: #ff3366; }
+
+    /* HUD (スコア表示と照準) */
+    #ui-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+      display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
+      pointer-events: none;
+    }
+    .score-display {
+      position: absolute; top: 70px; left: 10px;
+      color: #00ffcc; font-size: 24px; font-weight: bold;
+      text-shadow: 0 0 10px rgba(0,255,204,0.8);
+    }
+    .crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 60px; height: 60px; border: 2px solid rgba(0, 255, 204, 0.6); border-radius: 50%;
+      pointer-events: none;
+    }
+    .crosshair::after {
+      content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 8px; height: 8px; background: #ff0055; border-radius: 50%;
     }
 
-    /* 検出成功オーバーレイ */
-    #found-banner {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      z-index: 90; background: rgba(0, 255, 100, 0.9); color: #000;
-      padding: 30px 20px; border-radius: 15px; font-size: 28px; font-weight: bold;
-      text-align: center; display: none; width: 80%; box-shadow: 0 0 30px #00ffcc;
+    /* ヒット＆ショット時の画面フラッシュ */
+    #hit-flash {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
+      background: rgba(0, 255, 100, 0.4); opacity: 0; transition: opacity 0.08s ease;
+      pointer-events: none;
+    }
+    #shot-flash {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4;
+      background: rgba(255, 255, 255, 0.2); opacity: 0; transition: opacity 0.05s ease;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
 
+  <!-- 1. 起動用オーバーレイ -->
   <div id="start-overlay">
-    <h2>マーカー認識テスト</h2>
+    <h2>画像認識テストプログラム</h2>
+    <p style="margin-top:10px; font-size:13px; color:#aaa;">カメラと音声を有効化します</p>
     <button id="start-btn">テスト開始</button>
   </div>
 
-  <div id="log-box">ステータス: 待機中...</div>
-  <div id="found-banner">🎯 マーカー検出成功！</div>
+  <!-- 2. デバッグ用ステータス表示バー -->
+  <div id="status-bar">
+    <div>カメラ: <span id="cam-state">停止中</span></div>
+    <div>認識状態: <span id="target-state">未認識 (マーカーを探してください)</span></div>
+  </div>
 
+  <!-- 3. ゲームUI -->
+  <div id="ui-layer">
+    <div class="score-display">SCORE: <span id="score-val">0</span></div>
+    <div class="crosshair"></div>
+  </div>
+
+  <div id="hit-flash"></div>
+  <div id="shot-flash"></div>
+
+  <!-- 4. ARオブジェクト描画無しの純粋な認識用シーン -->
   <a-scene 
     mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: yes;" 
     color-space="sRGB" 
-    renderer="colorManagement: true, physicallyCorrectLights" 
     vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: false">
     
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    <!-- 0番目のターゲット -->
-    <a-entity id="target-0" mindar-image-target="targetIndex: 0">
-      <!-- 認識された時にマーカーの上に浮かび上がる緑の立方体 -->
-      <a-box position="0 0 0" scale="0.5 0.5 0.5" color="#00ffcc" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"></a-box>
-    </a-entity>
+    <!-- 3Dモデル等の描画物は一切置かない -->
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0"></a-entity>
   </a-scene>
 
   <script>
-    const logBox = document.getElementById('log-box');
-    const foundBanner = document.getElementById('found-banner');
+    let score = 0;
+    let isTargetVisible = false;
+    let isCoolingDown = false;
+
+    const camState = document.getElementById('cam-state');
+    const targetState = document.getElementById('target-state');
+    const scoreVal = document.getElementById('score-val');
+    const hitFlash = document.getElementById('hit-flash');
+    const shotFlash = document.getElementById('shot-flash');
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     const targetEntity = document.querySelector('#target-0');
 
-    function log(msg) {
-      logBox.innerHTML = "ステータス: " + msg;
+    let audioCtx;
+
+    // 簡単なSE生成 (Web Audio API)
+    function playShotSE() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
     }
 
+    function playHitSE() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    // 起動処理
     startBtn.addEventListener('click', async () => {
-      log("カメラ・MindAR起動中...");
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+
       const sceneEl = document.querySelector('a-scene');
       const arSystem = sceneEl.systems["mindar-image-system"];
 
       try {
+        camState.textContent = "起動中...";
         await arSystem.start();
 
-        // ビデオ要素の背面固定調整
+        // ビデオ画面のサイズ調整
         const video = document.querySelector('video');
         if (video) {
           video.style.position = 'absolute';
@@ -96,27 +173,50 @@
           video.style.zIndex = '1';
         }
 
+        camState.textContent = "🟢 正常動作中";
+        camState.style.color = "#00ffcc";
         startOverlay.style.display = 'none';
-        log("カメラ起動完了！マーカーにかざしてください。");
 
       } catch (err) {
-        log("❌ エラー発生: " + err.message);
+        camState.textContent = "❌ エラー: " + err.message;
+        camState.style.color = "#ff3366";
         alert("起動エラー: " + err.message);
       }
     });
 
-    // マーカー発見（Found）
+    // 画像認識判定イベント
     targetEntity.addEventListener("targetFound", () => {
-      log("🟢 ターゲット検知成功！(targetIndex: 0)");
-      foundBanner.style.display = 'block';
+      isTargetVisible = true;
+      targetState.textContent = "🟢 認識中！ (タップで撃てます)";
+      targetState.style.color = "#00ffcc";
     });
 
-    // マーカー見失い（Lost）
     targetEntity.addEventListener("targetLost", () => {
-      log("📷 カメラ動作中... マーカーを探しています");
-      foundBanner.style.display = 'none';
+      isTargetVisible = false;
+      targetState.textContent = "未認識 (マーカーを探してください)";
+      targetState.style.color = "#ff3366";
+    });
+
+    // 画面タップ時の処理
+    window.addEventListener('pointerdown', (e) => {
+      if (startOverlay.style.display !== 'none') return;
+
+      playShotSE();
+      shotFlash.style.opacity = '1';
+      setTimeout(() => { shotFlash.style.opacity = '0'; }, 50);
+
+      if (isTargetVisible && !isCoolingDown) {
+        score += 100;
+        scoreVal.textContent = score;
+        playHitSE();
+
+        hitFlash.style.opacity = '1';
+        setTimeout(() => { hitFlash.style.opacity = '0'; }, 120);
+
+        isCoolingDown = true;
+        setTimeout(() => { isCoolingDown = false; }, 800);
+      }
     });
   </script>
 </body>
 </html>
-
