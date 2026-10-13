@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MindAR 認識テスト</title>
+
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
+
+    /* スタートボタン */
+    #start-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
+      background: #111; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; color: #fff; text-align: center;
+    }
+    #start-btn {
+      background: #00ffcc; color: #000; border: none; padding: 20px 40px;
+      font-size: 20px; font-weight: bold; border-radius: 30px; margin-top: 20px; cursor: pointer;
+    }
+
+    /* 状態表示ログメッセージ */
+    #log-box {
+      position: absolute; top: 10px; left: 10px; z-index: 100;
+      background: rgba(0,0,0,0.8); color: #00ffcc; padding: 12px;
+      border-radius: 8px; font-size: 14px; max-width: 90%; word-break: break-all;
+    }
+
+    /* 検出成功オーバーレイ */
+    #found-banner {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 90; background: rgba(0, 255, 100, 0.9); color: #000;
+      padding: 30px 20px; border-radius: 15px; font-size: 28px; font-weight: bold;
+      text-align: center; display: none; width: 80%; box-shadow: 0 0 30px #00ffcc;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="start-overlay">
+    <h2>マーカー認識テスト</h2>
+    <button id="start-btn">テスト開始</button>
+  </div>
+
+  <div id="log-box">ステータス: 待機中...</div>
+  <div id="found-banner">🎯 マーカー検出成功！</div>
+
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: yes;" 
+    color-space="sRGB" 
+    renderer="colorManagement: true, physicallyCorrectLights" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
+    
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 0番目のターゲット -->
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0">
+      <!-- 認識された時にマーカーの上に浮かび上がる緑の立方体 -->
+      <a-box position="0 0 0" scale="0.5 0.5 0.5" color="#00ffcc" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"></a-box>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const logBox = document.getElementById('log-box');
+    const foundBanner = document.getElementById('found-banner');
+    const startOverlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+    const targetEntity = document.querySelector('#target-0');
+
+    function log(msg) {
+      logBox.innerHTML = "ステータス: " + msg;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      log("カメラ・MindAR起動中...");
+      const sceneEl = document.querySelector('a-scene');
+      const arSystem = sceneEl.systems["mindar-image-system"];
+
+      try {
+        await arSystem.start();
+
+        // ビデオ要素の背面固定調整
+        const video = document.querySelector('video');
+        if (video) {
+          video.style.position = 'absolute';
+          video.style.top = '0';
+          video.style.left = '0';
+          video.style.width = '100vw';
+          video.style.height = '100vh';
+          video.style.objectFit = 'cover';
+          video.style.zIndex = '1';
+        }
+
+        startOverlay.style.display = 'none';
+        log("カメラ起動完了！マーカーにかざしてください。");
+
+      } catch (err) {
+        log("❌ エラー発生: " + err.message);
+        alert("起動エラー: " + err.message);
+      }
+    });
+
+    // マーカー発見（Found）
+    targetEntity.addEventListener("targetFound", () => {
+      log("🟢 ターゲット検知成功！(targetIndex: 0)");
+      foundBanner.style.display = 'block';
+    });
+
+    // マーカー見失い（Lost）
+    targetEntity.addEventListener("targetLost", () => {
+      log("📷 カメラ動作中... マーカーを探しています");
+      foundBanner.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
 
