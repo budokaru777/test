@@ -104,7 +104,7 @@
   <div id="ui-layer">
     <div class="hud-header">
       <div>SCORE: <span id="score-val">0</span></div>
-      <div></div>
+      <div>MISSION: 担任救出</div>
     </div>
     <div class="crosshair"></div>
   </div>
@@ -121,9 +121,18 @@
     <button class="btn-retry" onclick="location.reload()">もう一度リトライ</button>
   </div>
 
-  <!-- AR Scene (認識システム) -->
+  <!-- AR Scene (遠距離・高感度認識用チューニング設定) -->
   <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: yes;" 
+    mindar-image="
+      imageTargetSrc: ./targets.mind; 
+      autoStart: false; 
+      uiLoading: no; 
+      uiError: yes;
+      filterMinCF: 0.0001;
+      filterBeta: 0.001;
+      missTolerance: 10;
+      warmupTolerance: 5;
+    " 
     color-space="sRGB" 
     vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: false">
@@ -187,6 +196,21 @@
       const arSystem = sceneEl.systems["mindar-image-system"];
 
       try {
+        // カメラの起動要求に高解像度（Full HD 1920x1080）制約を追加
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+              }
+            });
+          } catch (e) {
+            // 高解像度指定でエラーになった場合は標準パラメータにフォールバック
+          }
+        }
+
         await arSystem.start();
 
         // カメラ背景のフィッティング
