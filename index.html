@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>高専祭 フランクフルト整理券管理システム</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <!-- Google Fonts: Inter & Outfit & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            matsuri: {
+              red: '#E53E3E',
+              darkred: '#9B2C2C',
+              orange: '#ED8936',
+              yellow: '#ECC94B',
+              dark: '#1A202C',
+              cream: '#FFF5F5'
+            }
+          },
+          fontFamily: {
+            sans: ['Noto Sans JP', 'sans-serif'],
+            number: ['Outfit', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 呼び出し時のアニメーション効果 */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(237, 137, 54, 0.7); }
+      70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(237, 137, 54, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(237, 137, 54, 0); }
+    }
+    .animate-call {
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    /* パターン背景 */
+    .bg-matsuri-pattern {
+      background-color: #1a202c;
+      background-image: radial-gradient(#ed8936 0.75px, transparent 0.75px), radial-gradient(#ed8936 0.75px, #1a202c 0.75px);
+      background-size: 30px 30px;
+      background-position: 0 0, 15px 15px;
+    }
+
+    /* タブ切り替えのスムーズなトランジション */
+    .view-panel {
+      transition: opacity 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white">
+
+  <!-- ヘッダー / モード切替バー -->
+  <header class="bg-matsuri-dark text-white shadow-md sticky top-0 z-50 border-b-4 border-matsuri-orange">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+      <!-- ロゴ・タイトル -->
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-br from-red-500 to-orange-500 p-2.5 rounded-xl shadow-lg flex items-center justify-center text-white">
+          <i class="fa-solid font-bold text-xl fa-hotdog"></i>
+        </div>
+        <div>
+          <h1 class="font-black text-lg sm:text-xl tracking-wider leading-none flex items-center gap-2">
+            高専祭フランクフルト <span class="bg-red-600 text-xs px-2 py-0.5 rounded-full font-normal">整理券呼出</span>
+          </h1>
+          <p class="text-xs text-gray-400 mt-0.5">焼き上がり順 呼び出し＆管理システム</p>
+        </div>
+      </div>
+
+      <!-- モード切り替えタブ & 補助コントロール -->
+      <div class="flex items-center space-x-2">
+        <!-- 音量切替 -->
+        <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-yellow-400 transition-colors flex items-center justify-center border border-gray-700" title="音量のオン/オフ">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-lg"></i>
+        </button>
+
+        <!-- モード選択ボタン -->
+        <div class="bg-gray-800 p-1 rounded-xl border border-gray-700 flex text-xs sm:text-sm font-bold">
+          <button id="modeStaffBtn" onclick="switchMode('staff')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>レジ・スタッフ用</span>
+          </button>
+          <button id="modeDisplayBtn" onclick="switchMode('display')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-gray-300 hover:text-white">
+            <i class="fa-solid fa-tv"></i>
+            <span>お客様用モニター</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ領域 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6">
+
+    <!-- ========================================== -->
+    <!-- 1. スタッフコントロールパネル (Staff View) -->
+    <!-- ========================================== -->
+    <div id="staffView" class="view-panel space-y-6">
+      
+      <!-- 上部ステータス ＆ 発券エリア -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- 発券カード（レジ担当） -->
+        <div class="md:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="font-bold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
+              <i class="fa-solid fa-ticket text-orange-500"></i>
+              新規整理券の発行 (レジ会計時)
+            </h2>
+            <span class="text-xs bg-orange-100 text-orange-800 font-semibold px-2.5 py-1 rounded-full">
+              次発行: <span id="nextTicketNumPreview" class="font-bold font-number">#001</span>
+            </span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 items-center">
+            <!-- 個数選択ボタン -->
+            <div class="w-full sm:w-auto flex-1">
+              <label class="block text-xs text-gray-500 font-bold mb-1">注文本数を選択</label>
+              <div class="grid grid-cols-4 gap-2">
+                <button type="button" onclick="selectQty(1)" class="qty-btn bg-orange-50 border-2 border-orange-400 text-orange-900 font-bold py-2 rounded-xl text-center hover:bg-orange-100 transition active:scale-95 text-sm" data-qty="1">1本</button>
+                <button type="button" onclick="selectQty(2)" class="qty-btn bg-gray-50 border-2 border-gray-200 text-gray-700 font-bold py-2 rounded-xl text-center hover:bg-gray-100 transition active:scale-95 text-sm" data-qty="2">2本</button>
+                <button type="button" onclick="selectQty(3)" class="qty-btn bg-gray-50 border-2 border-gray-200 text-gray-700 font-bold py-2 rounded-xl text-center hover:bg-gray-100 transition active:scale-95 text-sm" data-qty="3">3本</button>
+                <button type="button" onclick="selectQty(4)" class="qty-btn bg-gray-50 border-2 border-gray-200 text-gray-700 font-bold py-2 rounded-xl text-center hover:bg-gray-100 transition active:scale-95 text-sm" data-qty="4">4本+</button>
+              </div>
+            </div>
+
+            <!-- 発券実行ボタン -->
+            <button onclick="createNewTicket()" class="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-black text-lg px-6 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 mt-auto">
+              <i class="fa-solid fa-plus-circle text-xl"></i>
+              <span>整理券を発行</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 焼き上がり予測・統計カード -->
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-100">調理待ち・目安</span>
+              <i class="fa-solid fa-clock text-amber-200 text-lg"></i>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span id="estimatedWaitMinutes" class="text-4xl font-black font-number">0</span>
+              <span class="text-sm font-bold">分程度の待ち</span>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-amber-400/40 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-amber-100 block">調理待ち整理券</span>
+              <span id="cookingCountStat" class="font-bold text-base font-number">0 件</span>
+            </div>
+            <div>
+              <span class="text-amber-100 block">待ち合計本数</span>
+              <span id="cookingQtyStat" class="font-bold text-base font-number">0 本</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- メインステータス管理ボード (3カラム) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        <!-- 1. 調理中・焼き上がり待ち -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col h-[520px]">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
+              <h3 class="font-extrabold text-gray-800 text-base">① 調理中・焼き待ち</h3>
+            </div>
+            <span id="cookingBadge" class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full font-number">0</span>
+          </div>
+
+          <!-- カードリスト -->
+          <div id="cookingList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <!-- 2. お呼び出し中・受取可能 -->
+        <div class="bg-orange-50/60 rounded-2xl p-4 shadow-sm border border-orange-200 flex flex-col h-[520px]">
+          <div class="flex items-center justify-between pb-3 border-b border-orange-200 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-red-600 animate-bounce"></span>
+              <h3 class="font-extrabold text-red-900 text-base">② お呼び出し中 (焼きたて)</h3>
+            </div>
+            <span id="readyBadge" class="bg-red-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full font-number">0</span>
+          </div>
+
+          <!-- カードリスト -->
+          <div id="readyList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <!-- 3. 受け渡し完了 -->
+        <div class="bg-gray-50 rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col h-[520px]">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+              <h3 class="font-bold text-gray-600 text-base">③ 受け渡し完了</h3>
+            </div>
+            <span id="completedBadge" class="bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-0.5 rounded-full font-number">0</span>
+          </div>
+
+          <!-- カードリスト -->
+          <div id="completedList" class="flex-1 overflow-y-auto space-y-2 pr-1 opacity-75">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 下部システム操作・リセットバー -->
+      <div class="bg-gray-800 text-gray-300 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-3 text-xs">
+        <div class="flex items-center gap-4">
+          <span><i class="fa-solid fa-circle-info text-orange-400 mr-1"></i> 別ウィンドウで「お客様用モニター」を開くと、この操作画面とリアルタイム連動します。</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="confirmResetData()" class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800 text-red-200 rounded-lg transition border border-red-700 flex items-center gap-1">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>本日データをリセット</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. お客様用デジタル表示板 (Display View) -->
+    <!-- ========================================== -->
+    <div id="displayView" class="view-panel hidden min-h-[80vh] flex flex-col space-y-6">
+      
+      <!-- アナウンスヘッダー -->
+      <div class="bg-gradient-to-r from-red-600 via-orange-500 to-red-600 text-white rounded-3xl p-6 shadow-xl text-center relative overflow-hidden">
+        <div class="relative z-10">
+          <h2 class="text-xl sm:text-2xl font-bold tracking-widest text-orange-100 uppercase">Frankfurt Call Board</h2>
+          <p class="text-3xl sm:text-5xl font-black mt-1 tracking-wider">フランクフルトお呼び出し番号</p>
+          <p class="text-sm sm:text-base mt-2 text-orange-100 font-medium">整理券番号をご確認の上、受取口へお越しください</p>
+        </div>
+        <!-- 飾り模様 -->
+        <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black">
+          <i class="fa-solid fa-drumstick-bite"></i>
+        </div>
+      </div>
+
+      <!-- メイン番号表示エリア（左右2分割） -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- お呼び出し中 (左側・メイン注目領域) -->
+        <div class="lg:col-span-8 bg-gradient-to-b from-white to-orange-50 rounded-3xl p-6 sm:p-8 shadow-lg border-4 border-orange-500 flex flex-col">
+          <div class="flex justify-between items-center pb-4 border-b-2 border-orange-200 mb-6">
+            <div class="flex items-center gap-3">
+              <span class="flex h-5 w-5 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-5 w-5 bg-red-600"></span>
+              </span>
+              <h3 class="text-2xl sm:text-3xl font-black text-red-600 tracking-wide">
+                ただいま焼きたて！お呼び出し中
+              </h3>
+            </div>
+            <span class="bg-red-600 text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full animate-pulse">
+              受取口へお越しください
+            </span>
+          </div>
+
+          <!-- 呼び出し番号カードグリッド -->
+          <div id="displayReadyGrid" class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4 auto-rows-max items-center">
+            <!-- JSで大きめの番号カードを挿入 -->
+          </div>
+
+          <div id="displayReadyEmpty" class="hidden flex-1 flex flex-col items-center justify-center text-gray-400 py-12">
+            <i class="fa-solid fa-hotdog text-6xl mb-3 text-orange-200"></i>
+            <p class="text-xl font-bold">現在呼び出し中の番号はありません</p>
+            <p class="text-sm text-gray-400">焼きたてを順次ご案内いたします</p>
+          </div>
+        </div>
+
+        <!-- じっくり調理中 (右側) -->
+        <div class="lg:col-span-4 bg-gray-900 text-white rounded-3xl p-6 shadow-lg border-2 border-gray-800 flex flex-col">
+          <div class="pb-4 border-b border-gray-800 mb-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-fire-burner"></i>
+              ただいま美味しく調理中
+            </h3>
+            <span id="displayCookingCount" class="text-xs bg-gray-800 text-amber-300 font-bold px-2.5 py-1 rounded-full">0組</span>
+          </div>
+
+          <!-- 調理中番号リスト -->
+          <div id="displayCookingGrid" class="flex-1 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2.5 auto-rows-max">
+            <!-- JSで番号チップを挿入 -->
+          </div>
+
+          <div id="displayCookingEmpty" class="hidden flex-1 flex items-center justify-center text-gray-500 py-8 text-center">
+            <p class="text-sm">調理待ちの番号はありません</p>
+          </div>
+
+          <!-- 待ち時間の目安 -->
+          <div class="mt-6 pt-4 border-t border-gray-800 bg-gray-800/60 rounded-2xl p-4 text-center">
+            <p class="text-xs text-gray-400 font-bold">現在の焼き上がり待ち目安</p>
+            <div class="text-3xl font-black text-amber-400 font-number mt-1">
+              約 <span id="displayWaitMinutes">0</span> 分待ち
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- モーダル（データリセット確認） -->
+  <div id="resetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center">
+      <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="font-bold text-gray-900 text-lg mb-2">本日の整理券データをリセットしますか？</h3>
+      <p class="text-xs text-gray-500 mb-6">全チケットのステータスと整理番号（#001から再開）がクリアされます。この操作は取り消せません。</p>
+      <div class="flex gap-3">
+        <button onclick="closeResetModal()" class="flex-1 py-2.5 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 text-sm">キャンセル</button>
+        <button onclick="executeResetData()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow text-sm">リセット実行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript ロジック -->
+  <script>
+    // --- アプリケーションの状態管理 ---
+    const STORAGE_KEY = 'frankfurt_tickets_data_v1';
+    const CHANNEL_NAME = 'frankfurt_system_sync';
+    
+    // BroadcastChannel によるタブ間同期
+    const broadcast = window.BroadcastChannel ? new BroadcastChannel(CHANNEL_NAME) : null;
+
+    let appState = {
+      tickets: [],
+      nextNumber: 1,
+      selectedQty: 1,
+      soundEnabled: true,
+      lastCalledId: null
+    };
+
+    // 音声チャイム（Web Audio API を使って外部ファイル依存なしで再生）
+    function playChimeSound() {
+      if (!appState.soundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        // 2音の和音ピンポン音
+        const now = ctx.currentTime;
+        
+        // 音1 (ミ / E5)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.8);
+
+        // 音2 (ソ# / G#5) - 少し遅れて発音
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(830.61, now + 0.15);
+        gain2.gain.setValueAtTime(0.4, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 1.2);
+
+      } catch(e) {
+        console.log('Audio Context Error:', e);
+      }
+    }
+
+    // 初期化処理
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderApp();
+
+      // 他のタブからの更新を検知
+      if (broadcast) {
+        broadcast.onmessage = (event) => {
+          if (event.data && event.data.type === 'UPDATE') {
+            loadState();
+            renderApp(false); // 音声の再発火を防ぐためfalse
+          }
+        };
+      }
+
+      // Storage Event Fallback
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) {
+          loadState();
+          renderApp(false);
+        }
+      });
+    });
+
+    // データの保存と同期
+    function saveState(notify = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      if (notify && broadcast) {
+        broadcast.postMessage({ type: 'UPDATE', timestamp: Date.now() });
+      }
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          appState = { ...appState, ...JSON.parse(saved) };
+        } catch(e) {
+          console.error('Failed to parse saved state');
+        }
+      }
+    }
+
+    // --- モード切替 ---
+    function switchMode(mode) {
+      const staffView = document.getElementById('staffView');
+      const displayView = document.getElementById('displayView');
+      const staffBtn = document.getElementById('modeStaffBtn');
+      const displayBtn = document.getElementById('modeDisplayBtn');
+
+      if (mode === 'staff') {
+        staffView.classList.remove('hidden');
+        displayView.classList.add('hidden');
+        staffBtn.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow font-bold";
+        displayBtn.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-gray-300 hover:text-white";
+        document.body.className = "bg-gray-100 text-gray-900 font-sans min-h-screen flex flex-col antialiased";
+      } else {
+        staffView.classList.add('hidden');
+        displayView.classList.remove('hidden');
+        displayBtn.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-white shadow font-bold";
+        staffBtn.className = "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-gray-300 hover:text-white";
+        document.body.className = "bg-matsuri-pattern text-gray-900 font-sans min-h-screen flex flex-col antialiased";
+      }
+    }
+
+    // 音声トグル
+    function toggleSound() {
+      appState.soundEnabled = !appState.soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      const btn = document.getElementById('soundToggleBtn');
+      if (appState.soundEnabled) {
+        icon.className = "fa-solid fa-volume-high text-lg";
+        btn.classList.remove('opacity-50');
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-lg text-gray-400";
+        btn.classList.add('opacity-50');
+      }
+      saveState(false);
+    }
+
+    // 個数選択ボタン
+    function selectQty(qty) {
+      appState.selectedQty = qty;
+      document.querySelectorAll('.qty-btn').forEach(btn => {
+        const bQty = parseInt(btn.getAttribute('data-qty'));
+        if (bQty === qty) {
+          btn.className = "qty-btn bg-orange-50 border-2 border-orange-500 text-orange-900 font-bold py-2 rounded-xl text-center hover:bg-orange-100 transition active:scale-95 text-sm shadow-sm";
+        } else {
+          btn.className = "qty-btn bg-gray-50 border-2 border-gray-200 text-gray-700 font-bold py-2 rounded-xl text-center hover:bg-gray-100 transition active:scale-95 text-sm";
+        }
+      });
+    }
+
+    // --- チケット操作 ---
+
+    // 1. 新規発行
+    function createNewTicket() {
+      const numStr = String(appState.nextNumber).padStart(3, '0');
+      const newTicket = {
+        id: 'T_' + Date.now(),
+        numberStr: '#' + numStr,
+        numVal: appState.nextNumber,
+        qty: appState.selectedQty,
+        status: 'cooking', // cooking, ready, completed
+        createdAt: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      appState.tickets.unshift(newTicket); // 最新を先頭に
+      appState.nextNumber += 1;
+      saveState();
+      renderApp();
+    }
+
+    // 2. ステータス変更 (調理中 -> お呼び出し中 / 完了など)
+    function updateTicketStatus(id, newStatus, triggerSound = true) {
+      const ticket = appState.tickets.find(t => t.id === id);
+      if (ticket) {
+        ticket.status = newStatus;
+        ticket.updatedAt = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        
+        if (newStatus === 'ready' && triggerSound) {
+          playChimeSound();
+          appState.lastCalledId = id;
+        }
+
+        saveState();
+        renderApp();
+      }
+    }
+
+    // 3. 再呼び出し (音を鳴らして主張)
+    function reCallTicket(id) {
+      playChimeSound();
+      appState.lastCalledId = id;
+      saveState();
+      renderApp();
+    }
+
+    // 4. データリセット
+    function confirmResetData() {
+      document.getElementById('resetModal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.add('hidden');
+    }
+
+    function executeResetData() {
+      appState.tickets = [];
+      appState.nextNumber = 1;
+      appState.lastCalledId = null;
+      saveState();
+      closeResetModal();
+      renderApp();
+    }
+
+    // --- 全体レンダリング ---
+    function renderApp(canPlayAudio = true) {
+      // 発券プレビュー番号
+      document.getElementById('nextTicketNumPreview').innerText = '#' + String(appState.nextNumber).padStart(3, '0');
+
+      // リストの分類
+      const cooking = appState.tickets.filter(t => t.status === 'cooking');
+      const ready = appState.tickets.filter(t => t.status === 'ready');
+      const completed = appState.tickets.filter(t => t.status === 'completed');
+
+      // 待ち時間計算（例: 焼き手のキャパ＝15分に20本焼き上がると仮定）
+      const totalCookingQty = cooking.reduce((sum, t) => sum + t.qty, 0);
+      const estimatedMinutes = Math.ceil(totalCookingQty / 15 * 10); // 15本あたり約10分と算出
+
+      document.getElementById('estimatedWaitMinutes').innerText = estimatedMinutes;
+      document.getElementById('displayWaitMinutes').innerText = estimatedMinutes;
+      document.getElementById('cookingCountStat').innerText = cooking.length + ' 件';
+      document.getElementById('cookingQtyStat').innerText = totalCookingQty + ' 本';
+
+      // バッジ件数
+      document.getElementById('cookingBadge').innerText = cooking.length;
+      document.getElementById('readyBadge').innerText = ready.length;
+      document.getElementById('completedBadge').innerText = completed.length;
+      document.getElementById('displayCookingCount').innerText = cooking.length + '組';
+
+      // ===================================
+      // A. スタッフ画面リストレンダリング
+      // ===================================
+      
+      // 1. 調理中リスト
+      const cookingListEl = document.getElementById('cookingList');
+      if (cooking.length === 0) {
+        cookingListEl.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm">調理待ちの整理券はありません</div>`;
+      } else {
+        cookingListEl.innerHTML = cooking.map(t => `
+          <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
+            <div>
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-black text-gray-800 font-number">${t.numberStr}</span>
+                <span class="bg-amber-200 text-amber-900 text-xs font-bold px-2 py-0.5 rounded">${t.qty}本</span>
+              </div>
+              <span class="text-[11px] text-gray-400">受付 ${t.createdAt}</span>
+            </div>
+            <button onclick="updateTicketStatus('${t.id}', 'ready')" class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg shadow active:scale-95 transition flex items-center gap-1">
+              <span>呼び出し</span>
+              <i class="fa-solid fa-bell"></i>
+            </button>
+          </div>
+        `).join('');
+      }
+
+      // 2. 呼び出し中リスト
+      const readyListEl = document.getElementById('readyList');
+      if (ready.length === 0) {
+        readyListEl.innerHTML = `<div class="text-center py-12 text-orange-300 text-sm">現在呼び出し中の整理券はありません</div>`;
+      } else {
+        readyListEl.innerHTML = ready.map(t => `
+          <div class="bg-white border-2 border-red-500 rounded-xl p-3 flex items-center justify-between shadow-md ${t.id === appState.lastCalledId ? 'ring-2 ring-red-400' : ''}">
+            <div>
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-black text-red-600 font-number">${t.numberStr}</span>
+                <span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded">${t.qty}本</span>
+              </div>
+              <span class="text-[11px] text-gray-400">呼出済み</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="reCallTicket('${t.id}')" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs" title="再チャイム">
+                <i class="fa-solid fa-bell"></i>
+              </button>
+              <button onclick="updateTicketStatus('${t.id}', 'completed')" class="bg-gray-800 hover:bg-black text-white font-bold text-xs px-3 py-2.5 rounded-lg transition active:scale-95 flex items-center gap-1">
+                <span>お渡し完了</span>
+                <i class="fa-solid fa-check"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 3. 完了リスト
+      const completedListEl = document.getElementById('completedList');
+      if (completed.length === 0) {
+        completedListEl.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm">お渡し完了履歴はありません</div>`;
+      } else {
+        completedListEl.innerHTML = completed.map(t => `
+          <div class="bg-white border border-gray-200 rounded-lg p-2.5 flex items-center justify-between text-gray-500">
+            <div class="flex items-center gap-2">
+              <span class="font-bold font-number text-gray-700 text-lg">${t.numberStr}</span>
+              <span class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">${t.qty}本</span>
+            </div>
+            <span class="text-[10px] text-gray-400">${t.updatedAt || ''} 完了</span>
+          </div>
+        `).join('');
+      }
+
+      // ===================================
+      // B. お客様用画面 (Display View) レンダリング
+      // ===================================
+
+      // 1. お呼び出し中メイン表示
+      const displayReadyGrid = document.getElementById('displayReadyGrid');
+      const displayReadyEmpty = document.getElementById('displayReadyEmpty');
+
+      if (ready.length === 0) {
+        displayReadyGrid.innerHTML = '';
+        displayReadyEmpty.classList.remove('hidden');
+      } else {
+        displayReadyEmpty.classList.add('hidden');
+        displayReadyGrid.innerHTML = ready.map(t => {
+          const isLatest = t.id === appState.lastCalledId;
+          return `
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border-4 ${isLatest ? 'border-red-600 animate-call shadow-red-200' : 'border-orange-400'} text-center shadow-lg transform transition hover:scale-105">
+              <div class="text-xs sm:text-sm font-bold text-orange-600 mb-1">お呼出中</div>
+              <div class="text-4xl sm:text-6xl font-black text-red-600 font-number tracking-tight">${t.numberStr}</div>
+              <div class="mt-2 inline-block bg-orange-100 text-orange-900 text-xs sm:text-sm font-bold px-3 py-0.5 rounded-full">
+                ${t.qty}本
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 2. 調理中チップ表示
+      const displayCookingGrid = document.getElementById('displayCookingGrid');
+      const displayCookingEmpty = document.getElementById('displayCookingEmpty');
+
+      if (cooking.length === 0) {
+        displayCookingGrid.innerHTML = '';
+        displayCookingEmpty.classList.remove('hidden');
+      } else {
+        displayCookingEmpty.classList.add('hidden');
+        displayCookingGrid.innerHTML = cooking.map(t => `
+          <div class="bg-gray-800 border border-gray-700 rounded-xl p-2.5 text-center">
+            <span class="text-xl sm:text-2xl font-bold font-number text-amber-300 block">${t.numberStr}</span>
+            <span class="text-[10px] text-gray-400">${t.qty}本</span>
+          </div>
+        `).join('');
+      }
+    }
+  </script>
+</body>
+</html>
