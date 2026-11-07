@@ -2,633 +2,398 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>フランクフルト整理券管理システム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>フランクフルト整理券管理システム (クラウド同期版)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
     body {
-      background-color: #f8fafc;
-      color: #1e293b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ヘッダー */
-    header {
-      background-color: #dc2626;
-      color: white;
-      padding: 1rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
 
-    .logo-icon {
-      font-size: 1.8rem;
-      cursor: pointer;
-      transition: transform 0.1s ease;
-      display: inline-block;
+    /* 呼び出しカードのアニメーション */
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); border-color: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
+      50% { transform: scale(1.03); border-color: #16a34a; box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
     }
 
-    .logo-icon:active {
-      transform: scale(0.9);
-    }
-
-    .brand h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .nav-btn {
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: background-color 0.2s;
-    }
-
-    .nav-btn:hover {
-      background-color: rgba(255, 255, 255, 0.3);
-    }
-
-    /* メインコンテンツエリア */
-    main {
-      flex: 1;
-      padding: 1.5rem;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    /* モニター画面 (お客様用) */
-    .monitor-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    @media (min-width: 768px) {
-      .monitor-grid {
-        grid-template-columns: 2fr 1fr;
-      }
-    }
-
-    .panel {
-      background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-      border: 1px solid #e2e8f0;
-    }
-
-    .panel-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .title-ready {
-      color: #16a34a;
-      border-bottom-color: #22c55e;
-    }
-
-    .title-cooking {
-      color: #ca8a04;
-      border-bottom-color: #eab308;
-    }
-
-    .number-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 1rem;
-    }
-
-    .num-card {
-      background-color: #f1f5f9;
-      border-radius: 0.75rem;
-      padding: 1rem 0.5rem;
-      text-align: center;
-      font-size: 2rem;
-      font-weight: 800;
-      color: #334155;
-      border: 2px solid #cbd5e1;
-    }
-
-    .num-card.ready {
-      background-color: #f0fdf4;
-      border-color: #22c55e;
-      color: #15803d;
-      animation: pulse 1.5s infinite;
-    }
-
-    .num-card.cooking {
-      background-color: #fefce8;
-      border-color: #fde047;
-      color: #a16207;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.03); }
-    }
-
-    /* スタッフ画面 */
-    .staff-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .action-bar {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e2e8f0;
-    }
-
-    .btn-issue {
-      background-color: #dc2626;
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      border-radius: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
-      transition: all 0.2s;
-    }
-
-    .btn-issue:hover {
-      background-color: #b91c1c;
-      transform: translateY(-1px);
-    }
-
-    .btn-issue:active {
-      transform: translateY(0);
-    }
-
-    .btn-reset {
-      background-color: #64748b;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-
-    .staff-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    @media (min-width: 768px) {
-      .staff-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    .staff-card-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .staff-item {
-      background: white;
-      border-radius: 0.75rem;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .staff-num {
-      font-size: 1.5rem;
-      font-weight: 800;
-    }
-
-    .item-btns {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .btn-sm {
-      border: none;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-
-    .btn-call { background-color: #22c55e; color: white; }
-    .btn-call:hover { background-color: #16a34a; }
-    
-    .btn-complete { background-color: #3b82f6; color: white; }
-    .btn-complete:hover { background-color: #2563eb; }
-
-    .btn-cancel { background-color: #ef4444; color: white; }
-    .btn-cancel:hover { background-color: #dc2626; }
-
-    /* モーダル (パスワード入力) */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal {
-      background: white;
-      border-radius: 1rem;
-      padding: 2rem;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-
-    .modal h2 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .modal input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.5rem;
-      font-size: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .modal-btns {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .empty-msg {
-      color: #94a3b8;
-      text-align: center;
-      padding: 2rem 0;
-      font-weight: 500;
+    .animate-ready {
+      animation: pulse-glow 1.5s infinite ease-in-out;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
 
-  <header>
-    <div class="brand">
-      <span class="logo-icon" id="logoIcon" title="スタッフ管理画面へ">🌭</span>
-      <h1>フランクフルトお呼び出し</h1>
+  <!-- ヘッダー -->
+  <header class="bg-red-600 text-white px-4 py-3 shadow-md flex justify-between items-center sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <!-- 5回タップターゲット -->
+      <span id="logo-icon" class="text-2xl cursor-pointer active:scale-95 transition-transform p-1">🌭</span>
+      <h1 class="text-lg font-bold tracking-tight">フランクフルトお呼び出し</h1>
     </div>
-    <div id="headerNav">
-      <button class="nav-btn hidden" id="btnLogout">モニタ画面へ戻る</button>
-    </div>
+    
+    <!-- スタッフ画面時のみ表示されるログアウトボタン -->
+    <button id="btn-logout" class="hidden bg-white/20 hover:bg-white/30 text-white border border-white/30 text-xs font-bold px-3 py-1.5 rounded-lg transition">
+      <i class="fa-solid fa-desktop mr-1"></i> モニタ画面へ戻る
+    </button>
   </header>
 
-  <main>
-    <!-- 1. お客様用モニタ画面 -->
-    <div id="monitorView">
-      <div class="monitor-grid">
-        <!-- 焼き上がり・呼び出し中 -->
-        <div class="panel">
-          <div class="panel-title title-ready">
-            <span>🔔</span> 焼きたて！お呼び出し中
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4">
+
+    <!-- 1. お客様用モニタ画面 (初期表示) -->
+    <section id="view-monitor" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- 焼きたて！お呼び出し中 (2カラム幅) -->
+        <div class="md:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <div class="flex items-center gap-2 border-b-2 border-green-500 pb-3 mb-4">
+            <i class="fa-solid fa-bell text-green-600 text-xl"></i>
+            <h2 class="text-lg font-bold text-green-700">焼きたて！お呼び出し中</h2>
           </div>
-          <div class="number-grid" id="readyList"></div>
-          <div id="readyEmpty" class="empty-msg">現在呼び出し中の番号はありません</div>
+          <div id="monitor-ready-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            <!-- JSで呼び出し中カードを生成 -->
+          </div>
+          <div id="monitor-ready-empty" class="text-center text-slate-400 py-12 text-sm font-medium">
+            現在呼び出し中の番号はありません
+          </div>
         </div>
 
-        <!-- 調理中（待ち） -->
-        <div class="panel">
-          <div class="panel-title title-cooking">
-            <span>🔥</span> ただいま調理中
+        <!-- ただいま調理中 (1カラム幅) -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+          <div class="flex items-center gap-2 border-b-2 border-amber-500 pb-3 mb-4">
+            <i class="fa-solid fa-fire text-amber-500 text-xl"></i>
+            <h2 class="text-lg font-bold text-amber-700">ただいま調理中</h2>
           </div>
-          <div class="number-grid" id="cookingList"></div>
-          <div id="cookingEmpty" class="empty-msg">調理中の番号はありません</div>
+          <div id="monitor-cooking-list" class="grid grid-cols-3 sm:grid-cols-3 gap-2">
+            <!-- JSで調理中カードを生成 -->
+          </div>
+          <div id="monitor-cooking-empty" class="text-center text-slate-400 py-12 text-sm font-medium">
+            調理中の番号はありません
+          </div>
         </div>
+
       </div>
-    </div>
+    </section>
 
-    <!-- 2. スタッフ専用管理画面 -->
-    <div id="staffView" class="hidden">
-      <div class="staff-container">
-        <!-- 操作バー -->
-        <div class="action-bar">
-          <div>
-            <button class="btn-issue" id="btnIssue">＋ 新規発券（会計完了）</button>
-          </div>
-          <div>
-            <button class="btn-reset" id="btnReset">本日データをリセット</button>
-          </div>
-        </div>
+    <!-- 2. スタッフ専用管理画面 (非表示) -->
+    <section id="view-staff" class="hidden space-y-6">
+      
+      <!-- コントロールバー -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+        <button id="btn-issue" class="bg-red-600 hover:bg-red-700 text-white font-bold text-lg px-6 py-3 rounded-xl shadow-lg shadow-red-600/30 active:scale-95 transition flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> 新規発券（会計完了）
+        </button>
 
-        <!-- 3カラム管理 -->
-        <div class="staff-grid">
-          <!-- 調理中 -->
-          <div class="panel">
-            <div class="panel-title title-cooking">1. 調理中</div>
-            <div class="staff-card-list" id="staffCookingList"></div>
-          </div>
-
-          <!-- 呼び出し中 -->
-          <div class="panel">
-            <div class="panel-title title-ready">2. 呼び出し中</div>
-            <div class="staff-card-list" id="staffReadyList"></div>
-          </div>
-
-          <!-- 完了・履歴 -->
-          <div class="panel">
-            <div class="panel-title" style="color:#64748b;">3. お渡し完了</div>
-            <div class="staff-card-list" id="staffDoneList"></div>
-          </div>
-        </div>
+        <button id="btn-reset" class="bg-slate-500 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-rotate-right mr-1"></i> 全データをリセット
+        </button>
       </div>
-    </div>
+
+      <!-- ステータス別リスト (3カラム) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- 1. 調理中 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-amber-700 border-b-2 border-amber-400 pb-2 flex justify-between items-center">
+            <span>🔥 1. 調理中</span>
+            <span id="count-cooking" class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">0</span>
+          </h3>
+          <div id="staff-cooking-list" class="space-y-2"></div>
+        </div>
+
+        <!-- 2. 呼び出し中 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-green-700 border-b-2 border-green-500 pb-2 flex justify-between items-center">
+            <span>🔔 2. 呼び出し中</span>
+            <span id="count-ready" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">0</span>
+          </h3>
+          <div id="staff-ready-list" class="space-y-2"></div>
+        </div>
+
+        <!-- 3. お渡し完了 -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-500 border-b-2 border-slate-300 pb-2 flex justify-between items-center">
+            <span>✅ 3. お渡し完了</span>
+            <span id="count-done" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">0</span>
+          </h3>
+          <div id="staff-done-list" class="space-y-2 max-h-[500px] overflow-y-auto"></div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
-  <!-- パスワード入力モーダル -->
-  <div id="passwordModal" class="modal-overlay hidden">
-    <div class="modal">
-      <h2>スタッフ認証</h2>
-      <p style="font-size:0.875rem; color:#64748b; margin-bottom:1rem;">パスワードを入力してください</p>
-      <input type="password" id="passwordInput" placeholder="パスワード">
-      <div class="modal-btns">
-        <button class="btn-sm" id="btnCancelPass" style="background:#e2e8f0; color:#334155;">キャンセル</button>
-        <button class="btn-sm btn-call" id="btnSubmitPass">ログイン</button>
+  <!-- モーダル: パスワード認証 -->
+  <div id="modal-password" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-xs p-6 space-y-4 border border-slate-100">
+      <div class="text-center">
+        <h3 class="font-bold text-slate-800 text-base">スタッフ認証</h3>
+        <p class="text-xs text-slate-500 mt-1">パスワードを入力してください</p>
+      </div>
+
+      <input type="password" id="input-password" placeholder="パスワード" class="w-full border border-slate-300 rounded-xl p-3 text-center text-lg outline-none focus:ring-2 focus:ring-red-500">
+
+      <div class="flex gap-2">
+        <button id="btn-cancel-pass" class="w-1/2 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">キャンセル</button>
+        <button id="btn-submit-pass" class="w-1/2 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-md">ログイン</button>
       </div>
     </div>
   </div>
 
-  <script>
-    // --- 定数・状態管理 ---
+  <!-- Firebase v9 (Modular SDK) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc,
+      setDoc,
+      addDoc, 
+      updateDoc,
+      deleteDoc,
+      query, 
+      orderBy, 
+      onSnapshot, 
+      serverTimestamp,
+      getDocs,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Firebase Configuration (プロジェクト設定)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgjxiw-m0Vgk1X-yWRKrGsjXTAS4ZpDAM",
+      authDomain: "telephone-99ed5.firebaseapp.com",
+      projectId: "telephone-99ed5",
+      storageBucket: "telephone-99ed5.firebasestorage.app",
+      messagingSenderId: "609918192167",
+      appId: "1:609918192167:web:4361772de1f08b029edc02"
+    };
+
+    // Firebase 初期化
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const ADMIN_PASS = 'admin13570';
     let tapCount = 0;
     let tapTimer = null;
+    let tickets = [];
+    let currentMaxNumber = 0;
 
-    // データ構造
-    let state = {
-      currentNumber: 0,
-      tickets: [] // { id, number, status: 'cooking' | 'ready' | 'done' }
+    // DOM Elements
+    const logoIcon = document.getElementById('logo-icon');
+    const modalPassword = document.getElementById('modal-password');
+    const inputPassword = document.getElementById('input-password');
+    const btnSubmitPass = document.getElementById('btn-submit-pass');
+    const btnCancelPass = document.getElementById('btn-cancel-pass');
+    const btnLogout = document.getElementById('btn-logout');
+
+    const viewMonitor = document.getElementById('view-monitor');
+    const viewStaff = document.getElementById('view-staff');
+
+    const monitorReadyList = document.getElementById('monitor-ready-list');
+    const monitorReadyEmpty = document.getElementById('monitor-ready-empty');
+    const monitorCookingList = document.getElementById('monitor-cooking-list');
+    const monitorCookingEmpty = document.getElementById('monitor-cooking-empty');
+
+    const btnIssue = document.getElementById('btn-issue');
+    const btnReset = document.getElementById('btn-reset');
+    const staffCookingList = document.getElementById('staff-cooking-list');
+    const staffReadyList = document.getElementById('staff-ready-list');
+    const staffDoneList = document.getElementById('staff-done-list');
+
+    // --- Firebase リアルタイム同期リスナー ---
+    function initFirestoreListener() {
+      const q = query(collection(db, "frankfurt_tickets"), orderBy("number", "asc"));
+      
+      onSnapshot(q, (snapshot) => {
+        tickets = [];
+        currentMaxNumber = 0;
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const item = { id: docSnap.id, ...data };
+          tickets.push(item);
+
+          if (item.number > currentMaxNumber) {
+            currentMaxNumber = item.number;
+          }
+        });
+
+        render();
+      });
+    }
+
+    // --- 画面描画 ---
+    function render() {
+      // 1. モニター画面 (お客様用)
+      const readyTickets = tickets.filter(t => t.status === 'ready');
+      const cookingTickets = tickets.filter(t => t.status === 'cooking');
+
+      // 呼び出し中
+      monitorReadyList.innerHTML = '';
+      if (readyTickets.length === 0) {
+        monitorReadyEmpty.classList.remove('hidden');
+      } else {
+        monitorReadyEmpty.classList.add('hidden');
+        readyTickets.forEach(t => {
+          const div = document.createElement('div');
+          div.className = 'bg-green-50 border-2 border-green-500 text-green-700 rounded-2xl py-3 text-center text-3xl font-extrabold shadow-sm animate-ready';
+          div.textContent = t.number;
+          monitorReadyList.appendChild(div);
+        });
+      }
+
+      // 調理中
+      monitorCookingList.innerHTML = '';
+      if (cookingTickets.length === 0) {
+        monitorCookingEmpty.classList.remove('hidden');
+      } else {
+        monitorCookingEmpty.classList.add('hidden');
+        cookingTickets.forEach(t => {
+          const div = document.createElement('div');
+          div.className = 'bg-amber-50 border border-amber-300 text-amber-700 rounded-xl py-2 text-center text-xl font-bold';
+          div.textContent = t.number;
+          monitorCookingList.appendChild(div);
+        });
+      }
+
+      // 2. スタッフ管理画面
+      staffCookingList.innerHTML = '';
+      staffReadyList.innerHTML = '';
+      staffDoneList.innerHTML = '';
+
+      document.getElementById('count-cooking').textContent = cookingTickets.length;
+      document.getElementById('count-ready').textContent = readyTickets.length;
+      document.getElementById('count-done').textContent = tickets.filter(t => t.status === 'done').length;
+
+      tickets.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm';
+
+        if (t.status === 'cooking') {
+          item.innerHTML = `
+            <span class="text-xl font-extrabold text-slate-800">#${t.number}</span>
+            <div class="flex gap-1.5">
+              <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition" onclick="updateStatus('${t.id}', 'ready')">呼び出す</button>
+              <button class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2 py-1.5 rounded-lg transition" onclick="deleteTicket('${t.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          `;
+          staffCookingList.appendChild(item);
+        } else if (t.status === 'ready') {
+          item.innerHTML = `
+            <span class="text-xl font-extrabold text-green-600">#${t.number}</span>
+            <div class="flex gap-1.5">
+              <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition" onclick="updateStatus('${t.id}', 'done')">お渡し完了</button>
+              <button class="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-1.5 rounded-lg hover:bg-slate-300" onclick="updateStatus('${t.id}', 'cooking')">戻す</button>
+            </div>
+          `;
+          staffReadyList.appendChild(item);
+        } else if (t.status === 'done') {
+          item.innerHTML = `
+            <span class="text-sm font-bold text-slate-400">#${t.number}</span>
+            <button class="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-slate-300" onclick="updateStatus('${t.id}', 'ready')">戻す</button>
+          `;
+          staffDoneList.prepend(item);
+        }
+      });
+    }
+
+    // --- Firebase 操作関数 ---
+    window.updateStatus = async (id, status) => {
+      try {
+        await updateDoc(doc(db, "frankfurt_tickets", id), { status });
+      } catch (err) {
+        console.error("更新エラー:", err);
+      }
     };
 
-    // DOM要素
-    const logoIcon = document.getElementById('logoIcon');
-    const passwordModal = document.getElementById('passwordModal');
-    const passwordInput = document.getElementById('passwordInput');
-    const btnSubmitPass = document.getElementById('btnSubmitPass');
-    const btnCancelPass = document.getElementById('btnCancelPass');
-    const btnLogout = document.getElementById('btnLogout');
-
-    const monitorView = document.getElementById('monitorView');
-    const staffView = document.getElementById('staffView');
-
-    const readyList = document.getElementById('readyList');
-    const readyEmpty = document.getElementById('readyEmpty');
-    const cookingList = document.getElementById('cookingList');
-    const cookingEmpty = document.getElementById('cookingEmpty');
-
-    const btnIssue = document.getElementById('btnIssue');
-    const btnReset = document.getElementById('btnReset');
-    const staffCookingList = document.getElementById('staffCookingList');
-    const staffReadyList = document.getElementById('staffReadyList');
-    const staffDoneList = document.getElementById('staffDoneList');
-
-    // --- ローカルストレージ連携・同期 ---
-    function loadState() {
-      const saved = localStorage.getItem('frankfurt_ticket_data');
-      if (saved) {
-        try {
-          state = JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
+    window.deleteTicket = async (id) => {
+      try {
+        await deleteDoc(doc(db, "frankfurt_tickets", id));
+      } catch (err) {
+        console.error("削除エラー:", err);
       }
-    }
+    };
 
-    function saveState() {
-      localStorage.setItem('frankfurt_ticket_data', JSON.stringify(state));
-      render();
-    }
-
-    // 他のタブ/ウィンドウとリアルタイム同期
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'frankfurt_ticket_data') {
-        loadState();
-        render();
+    btnIssue.addEventListener('click', async () => {
+      const nextNum = currentMaxNumber + 1;
+      try {
+        await addDoc(collection(db, "frankfurt_tickets"), {
+          number: nextNum,
+          status: 'cooking',
+          createdAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.error("発券エラー:", err);
       }
     });
 
-    // --- 5回タップ判定 & パスワードモーダル ---
+    btnReset.addEventListener('click', async () => {
+      if (!confirm('本日のすべての整理券データをクラウド上から消去しますか？')) return;
+
+      try {
+        const snapshot = await getDocs(collection(db, "frankfurt_tickets"));
+        const batch = writeBatch(db);
+        snapshot.forEach((docSnap) => {
+          batch.delete(docSnap.ref);
+        });
+        await batch.commit();
+      } catch (err) {
+        console.error("リセットエラー:", err);
+      }
+    });
+
+    // --- 5回タップ ＆ 隠し認証 ---
     logoIcon.addEventListener('click', () => {
       tapCount++;
       clearTimeout(tapTimer);
 
       if (tapCount >= 5) {
         tapCount = 0;
-        showPasswordModal();
+        inputPassword.value = '';
+        modalPassword.classList.remove('hidden');
+        inputPassword.focus();
       } else {
         tapTimer = setTimeout(() => {
           tapCount = 0;
-        }, 1500); // 1.5秒以内に5回タップ
+        }, 1500);
       }
     });
 
-    function showPasswordModal() {
-      passwordInput.value = '';
-      passwordModal.classList.remove('hidden');
-      passwordInput.focus();
-    }
-
-    function hidePasswordModal() {
-      passwordModal.classList.add('hidden');
-    }
-
-    btnCancelPass.addEventListener('click', hidePasswordModal);
+    btnCancelPass.addEventListener('click', () => modalPassword.classList.add('hidden'));
 
     btnSubmitPass.addEventListener('click', checkPassword);
-    passwordInput.addEventListener('keypress', (e) => {
+    inputPassword.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') checkPassword();
     });
 
     function checkPassword() {
-      if (passwordInput.value === ADMIN_PASS) {
-        hidePasswordModal();
-        switchToStaffView();
+      if (inputPassword.value === ADMIN_PASS) {
+        modalPassword.classList.add('hidden');
+        viewMonitor.classList.add('hidden');
+        viewStaff.classList.remove('hidden');
+        btnLogout.classList.remove('hidden');
       } else {
-        alert('パスワードが違います');
-        passwordInput.value = '';
+        alert('パスワードが正しくありません');
+        inputPassword.value = '';
       }
     }
 
-    // --- 画面切り替え ---
-    function switchToStaffView() {
-      monitorView.classList.add('hidden');
-      staffView.classList.remove('hidden');
-      btnLogout.classList.remove('hidden');
-    }
-
-    function switchToMonitorView() {
-      staffView.classList.add('hidden');
-      monitorView.classList.remove('hidden');
+    btnLogout.addEventListener('click', () => {
+      viewStaff.classList.add('hidden');
       btnLogout.classList.add('hidden');
-    }
-
-    btnLogout.addEventListener('click', switchToMonitorView);
-
-    // --- スタッフ操作 ---
-    btnIssue.addEventListener('click', () => {
-      state.currentNumber++;
-      state.tickets.push({
-        id: Date.now(),
-        number: state.currentNumber,
-        status: 'cooking'
-      });
-      saveState();
+      viewMonitor.classList.remove('hidden');
     });
 
-    btnReset.addEventListener('click', () => {
-      if (confirm('本日のすべての整理券データをリセットしますか？')) {
-        state = { currentNumber: 0, tickets: [] };
-        saveState();
-      }
-    });
-
-    function updateTicketStatus(id, newStatus) {
-      const ticket = state.tickets.find(t => t.id === id);
-      if (ticket) {
-        ticket.status = newStatus;
-        saveState();
-      }
-    }
-
-    function deleteTicket(id) {
-      state.tickets = state.tickets.filter(t => t.id !== id);
-      saveState();
-    }
-
-    // --- 描画処理 ---
-    function render() {
-      // 1. モニター画面の描画
-      const readyTickets = state.tickets.filter(t => t.status === 'ready');
-      const cookingTickets = state.tickets.filter(t => t.status === 'cooking');
-
-      // 呼び出し中
-      readyList.innerHTML = '';
-      if (readyTickets.length === 0) {
-        readyEmpty.classList.remove('hidden');
-      } else {
-        readyEmpty.classList.add('hidden');
-        readyTickets.forEach(t => {
-          const card = document.createElement('div');
-          card.className = 'num-card ready';
-          card.textContent = t.number;
-          readyList.appendChild(card);
-        });
-      }
-
-      // 調理中
-      cookingList.innerHTML = '';
-      if (cookingTickets.length === 0) {
-        cookingEmpty.classList.remove('hidden');
-      } else {
-        cookingEmpty.classList.add('hidden');
-        cookingTickets.forEach(t => {
-          const card = document.createElement('div');
-          card.className = 'num-card cooking';
-          card.textContent = t.number;
-          cookingList.appendChild(card);
-        });
-      }
-
-      // 2. スタッフ画面の描画
-      staffCookingList.innerHTML = '';
-      staffReadyList.innerHTML = '';
-      staffDoneList.innerHTML = '';
-
-      state.tickets.forEach(t => {
-        const item = document.createElement('div');
-        item.className = 'staff-item';
-
-        if (t.status === 'cooking') {
-          item.innerHTML = `
-            <span class="staff-num">#${t.number}</span>
-            <div class="item-btns">
-              <button class="btn-sm btn-call" onclick="updateTicketStatus(${t.id}, 'ready')">呼び出す</button>
-              <button class="btn-sm btn-cancel" onclick="deleteTicket(${t.id})">削除</button>
-            </div>
-          `;
-          staffCookingList.appendChild(item);
-        } else if (t.status === 'ready') {
-          item.innerHTML = `
-            <span class="staff-num" style="color:#16a34a;">#${t.number}</span>
-            <div class="item-btns">
-              <button class="btn-sm btn-complete" onclick="updateTicketStatus(${t.id}, 'done')">お渡し完了</button>
-              <button class="btn-sm" style="background:#e2e8f0;" onclick="updateTicketStatus(${t.id}, 'cooking')">戻す</button>
-            </div>
-          `;
-          staffReadyList.appendChild(item);
-        } else if (t.status === 'done') {
-          item.innerHTML = `
-            <span class="staff-num" style="color:#94a3b8; font-size:1.1rem;">#${t.number}</span>
-            <div class="item-btns">
-              <button class="btn-sm" style="background:#e2e8f0;" onclick="updateTicketStatus(${t.id}, 'ready')">戻す</button>
-            </div>
-          `;
-          staffDoneList.prepend(item); // 完了分は新しい順に上へ
-        }
-      });
-    }
-
-    // 初期化
-    loadState();
-    render();
+    // 初期化実行
+    initFirestoreListener();
   </script>
 </body>
 </html>
