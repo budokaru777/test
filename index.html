@@ -1,627 +1,597 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Letter to Host Family - Photo & PDF Maker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
-<!-- PDF直接ダウンロード用ライブラリ (html2pdf.js) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>材料学 一夜漬けトレーナー（目標75〜85点）</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
 <style>
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  * {
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  body {
-    margin: 0;
-    padding: 20px;
-    background-color: #2c3e50;
-    font-family: 'Patrick Hand', cursive, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-  }
-
-  /* 操作パネル */
-  .control-panel {
-    background: #ffffff;
-    color: #333;
-    padding: 14px 24px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 210mm;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 13.5px;
-  }
-
-  .instructions {
-    line-height: 1.5;
-  }
-
-  .btn-group {
-    display: flex;
-    gap: 10px;
-  }
-
-  .btn {
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-
-  .btn-pdf {
-    background: #e74c3c;
-    color: white;
-    box-shadow: 0 3px 0 #c0392b;
-  }
-  .btn-pdf:hover {
-    background: #ff5e4d;
-    transform: translateY(-1px);
-  }
-  .btn-pdf:active {
-    transform: translateY(2px);
-    box-shadow: none;
-  }
-
-  .btn-print {
-    background: #27ae60;
-    color: white;
-    box-shadow: 0 3px 0 #1e8449;
-  }
-  .btn-print:hover {
-    background: #2ecc71;
-    transform: translateY(-1px);
-  }
-
-  /* A4用紙コンテナ (210mm x 297mm) */
-  .a4-wrapper {
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    background: #fff;
-  }
-
-  .a4-sheet {
-    width: 210mm;
-    height: 297mm;
-    background: #ffffff;
-    padding: 12mm 14mm;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  @media print {
-    body {
-      background: none;
-      padding: 0;
-    }
-    .control-panel {
-      display: none !important;
-    }
-    .a4-wrapper {
-      box-shadow: none;
-    }
-    .photo-placeholder {
-      border: none !important;
-      background: transparent !important;
-    }
-    .photo-controls {
-      display: none !important;
-    }
-  }
-
-  /* ヘッダー部分 */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 6mm;
-    padding: 0 2mm;
-  }
-
-  .title {
-    font-family: sans-serif;
-    font-weight: bold;
-    font-size: 14pt;
-    color: #222;
-  }
-
-  .name-field {
-    font-family: sans-serif;
-    font-weight: bold;
-    font-size: 13pt;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .name-line {
-    display: inline-block;
-    width: 65mm;
-    border-bottom: 1.5px solid #333;
-    font-family: 'Caveat', cursive;
-    font-size: 20pt;
-    text-align: center;
-    color: #111;
-    line-height: 0.9;
-  }
-
-  /* メインのグレー外枠 */
-  .main-frame {
-    flex: 1;
-    border: 4px solid #777;
-    border-radius: 2px;
-    position: relative;
-    padding: 6mm;
-  }
-
-  /* 写真スロット（クリックでアップロード可能） */
-  .photo-slot {
-    border: 2px dashed #999;
-    background-color: #f8f9fa;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: #666;
-    font-family: sans-serif;
-    font-size: 8.5pt;
-    position: absolute;
-    z-index: 1;
-    cursor: pointer;
-    overflow: hidden;
-    transition: border-color 0.2s, background-color 0.2s;
-  }
-
-  .photo-slot:hover {
-    border-color: #3498db;
-    background-color: #ebf5fb;
-  }
-
-  .photo-slot.has-image {
-    border-style: solid;
-    border-color: transparent;
-    background-color: transparent;
-  }
-
-  .photo-slot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: none;
-    pointer-events: none;
-    transform-origin: center center;
-  }
-
-  .photo-slot.has-image img {
-    display: block;
-  }
-
-  .photo-slot.has-image .placeholder-text {
-    display: none;
-  }
-
-  .placeholder-text span {
-    font-weight: bold;
-    color: #3498db;
-    display: block;
-    margin-bottom: 2px;
-    font-size: 9.5pt;
-  }
-
-  /* 画像配置後のズーム・削除ミニコントロール */
-  .photo-controls {
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    background: rgba(0,0,0,0.75);
-    border-radius: 6px;
-    padding: 3px 6px;
-    display: none;
-    gap: 5px;
-    z-index: 10;
-  }
-
-  .photo-slot.has-image:hover .photo-controls {
-    display: flex;
-  }
-
-  .photo-controls button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 2px 4px;
-    font-weight: bold;
-  }
-  .photo-controls button:hover {
-    color: #3498db;
-  }
-
-  /* テキスト装飾 */
-  .handwriting {
-    font-family: 'Patrick Hand', cursive;
-    font-size: 15.5pt;
-    line-height: 1.25;
-    color: #222;
-    position: absolute;
-    z-index: 2;
-  }
-
-  .underline-wavy {
-    text-decoration: underline wavy #555;
-    text-underline-offset: 4px;
-  }
-
-  .underline-solid {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  /* 吹き出し */
-  .cloud-bubble {
-    border: 2px solid #444;
-    border-radius: 35px 45px 40px 30px / 25px 30px 25px 35px;
-    padding: 10px 16px;
-    background: #fff;
-    position: absolute;
-    z-index: 2;
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
-  }
-
-  .oval-bubble {
-    border: 2px solid #444;
-    border-radius: 50%;
-    padding: 16px 22px;
-    background: #fff;
-    position: absolute;
-    z-index: 2;
-    text-align: center;
-  }
-
-  /* 家族エリアの枠 */
-  .family-zone {
-    position: absolute;
-    bottom: 4mm;
-    left: 4mm;
-    width: 105mm;
-    height: 82mm;
-    border: 2px solid #888;
-    border-radius: 40px 50px 30px 45px / 30px 25px 35px 30px;
-    padding: 10px 14px;
-  }
-
-  /* SVG矢印レイヤー */
-  .arrows-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  [contenteditable="true"]:hover {
-    background-color: #fffde7;
-    outline: 1px dashed #fbc02d;
-  }
+:root{--background:#f1f5f9;--content:#ffffff;--card:#ffffff;--sidebar:#f8fafc;--card-border:#e2e8f0;--border:#cbd5e1;--foreground:#0f172a;--muted-foreground:#64748b;--placeholder:#94a3b8;--primary:#2563eb;--primary-foreground:#ffffff;--secondary:#e2e8f0;--secondary-foreground:#0f172a;--accent:#dbeafe;--link:#2563eb;--success:#16a34a;--warning:#d97706;--error:#dc2626;}
+body{font-family:"Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;font-size:14px;}
 </style>
 </head>
-<body>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-3 sm:p-5">
+  <div class="max-w-4xl mx-auto space-y-4">
 
-  <!-- 操作パネル -->
-  <div class="control-panel">
-    <div class="instructions">
-      <strong>📝 作り方ガイド：</strong><br>
-      ① <b>点線の写真枠をクリック</b>してスマホ・PCから写真を選択（ホバーで拡大縮小も可能）<br>
-      ② <b>名前や英文をクリック</b>して自由に文字を編集し、右のボタンでPDF保存！
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-pdf" id="downloadPdfBtn" onclick="downloadPDF()">📥 PDFを直接ダウンロード</button>
-      <button class="btn btn-print" onclick="window.print()">🖨️ 印刷する</button>
-    </div>
-  </div>
-
-  <!-- 隠しファイルインプット -->
-  <input type="file" id="imageInput" accept="image/*" style="display: none;">
-
-  <!-- A4シート本体 -->
-  <div class="a4-wrapper">
-    <div class="a4-sheet" id="a4Sheet">
-      <!-- ヘッダー -->
-      <div class="header">
-        <div class="title">Letter to Host Family</div>
-        <div class="name-field">
-          <span>Name:</span>
-          <span class="name-line" contenteditable="true">Your Name</span>
+    <!-- Header & Score Meter -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-xs font-bold rounded bg-[var(--primary)] text-[var(--primary-foreground)]">明日10:00本番</span>
+            <h1 class="text-lg font-bold">材料学 0→80点 一夜漬けトレーナー</h1>
+          </div>
+          <p class="text-xs text-[var(--muted-foreground)] mt-1">
+            過去問2年分＋第1〜7回課題解答の頻出パターンに完全特化（関数電卓を手元に用意してください）
+          </p>
+        </div>
+        <div class="bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-2 min-w-[190px]">
+          <div class="flex justify-between items-baseline text-xs">
+            <span class="text-[var(--muted-foreground)]">推定到達スコア</span>
+            <span id="est-score" class="text-lg font-extrabold text-[var(--primary)] tabular-nums">12 / 85点</span>
+          </div>
+          <div class="w-full h-2 bg-[var(--border)] rounded-full mt-1 overflow-hidden">
+            <div id="est-bar" class="h-full bg-[var(--success)] transition-all duration-300" style="width: 14%"></div>
+          </div>
+          <div id="mastered-count" class="text-[11px] text-[var(--muted-foreground)] mt-1 text-right tabular-nums">暗記カード習得: 0 / 28</div>
         </div>
       </div>
 
-      <!-- メイン枠 -->
-      <div class="main-frame">
+      <!-- Tabs -->
+      <nav class="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--border)]">
+        <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition">⚡ 弱点反復カード (28問)</button>
+        <button onclick="switchTab('calc')" id="tab-calc" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition">🧮 関数電卓 3大計算道場</button>
+        <button onclick="switchTab('drill')" id="tab-drill" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition">🎯 合金元素＆JIS 瞬発ドリル</button>
+        <button onclick="switchTab('terms')" id="tab-terms" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition">✍️ 語句説明 虫食いチェック</button>
+      </nav>
+    </header>
 
-        <!-- 1. 左上：ソーセージ -->
-        <div class="photo-slot" style="top: 6mm; left: 6mm; width: 52mm; height: 38mm;" onclick="triggerUpload(this)">
-          <div class="placeholder-text">
-            <span>📷 + 写真を選択</span>
-            ソーセージの写真
+    <!-- TAB 1: Flashcards -->
+    <section id="panel-cards" class="space-y-3">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setCardFilter('all')" id="flt-all" class="px-2.5 py-1 rounded border border-[var(--border)] font-semibold">全問</button>
+            <button onclick="setCardFilter('weak')" id="flt-weak" class="px-2.5 py-1 rounded border border-[var(--border)] font-semibold">未習得・不安のみ</button>
+            <select id="cat-select" onchange="setCardCategory(this.value)" class="px-2 py-1 rounded border border-[var(--border)] bg-[var(--background)] text-xs">
+              <option value="all">全分野</option>
+              <option value="状態図・組織">状態図・標準組織 (25点枠)</option>
+              <option value="結晶格子・隙間">結晶格子・隙間・焼入れ (30点枠)</option>
+              <option value="熱処理・鋳鉄">熱処理・鋳鉄 (10点枠)</option>
+              <option value="JIS・合金元素">JIS材料記号・合金元素 (24点枠)</option>
+            </select>
           </div>
-          <img src="" alt="Sausages" data-scale="1">
-          <div class="photo-controls" onclick="event.stopPropagation()">
-            <button onclick="zoomImage(this, 0.1)" title="拡大">＋</button>
-            <button onclick="zoomImage(this, -0.1)" title="縮小">－</button>
-            <button onclick="removeImage(this)" title="削除">×</button>
-          </div>
+          <span id="card-progress" class="font-mono text-[var(--muted-foreground)] tabular-nums">1 / 28</span>
         </div>
 
-        <div class="handwriting" style="top: 47mm; left: 8mm;" contenteditable="true">
-          ❤️ I love <span class="underline-wavy">sausages!</span> ❤️
+        <div id="flashcard-box" onclick="flipCard()" class="cursor-pointer select-none bg-[var(--background)] border-2 border-[var(--border)] hover:border-[var(--primary)] rounded-xl p-5 min-h-[210px] flex flex-col justify-between transition">
+          <div class="flex justify-between items-center text-xs">
+            <span id="card-cat" class="px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] font-semibold"></span>
+            <span id="card-side-badge" class="text-[var(--muted-foreground)] font-bold">問題（タップ/Spaceで答え表示）</span>
+          </div>
+          <div id="card-content" class="my-4 text-base sm:text-lg font-bold leading-relaxed whitespace-pre-line"></div>
+          <div id="card-hint" class="text-xs text-[var(--muted-foreground)]"></div>
         </div>
 
-        <!-- 2. 右上：ロード・オブ・ザ・リング -->
-        <div class="handwriting" style="top: 8mm; left: 66mm;" contenteditable="true">
-          👑 I love <span class="underline-solid">The Lord of the Rings.</span>
-        </div>
-
-        <div class="photo-slot" style="top: 6mm; right: 6mm; width: 54mm; height: 54mm; border-radius: 50%;" onclick="triggerUpload(this)">
-          <div class="placeholder-text">
-            <span>📷 + 写真を選択</span>
-            ロード・オブ・ザ・リング
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex gap-2">
+            <button onclick="prevCard()" class="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs font-semibold hover:opacity-80">← 前へ</button>
+            <button onclick="flipCard()" class="px-4 py-2 rounded-lg border border-[var(--primary)] text-[var(--primary)] text-xs font-bold hover:opacity-80">めくる (Space)</button>
           </div>
-          <img src="" alt="LOTR" data-scale="1">
-          <div class="photo-controls" style="bottom: 10px; right: 25px;" onclick="event.stopPropagation()">
-            <button onclick="zoomImage(this, 0.1)" title="拡大">＋</button>
-            <button onclick="zoomImage(this, -0.1)" title="縮小">－</button>
-            <button onclick="removeImage(this)" title="削除">×</button>
+          <div class="flex gap-2">
+            <button onclick="markCard(false)" class="px-3.5 py-2 rounded-lg bg-[var(--warning)] text-white text-xs font-bold hover:opacity-90">まだ不安 (残す)</button>
+            <button onclick="markCard(true)" class="px-3.5 py-2 rounded-lg bg-[var(--success)] text-white text-xs font-bold hover:opacity-90">覚えた！ (次へ)</button>
           </div>
         </div>
-
-        <!-- 3. 左中央：プロダクトデザイン（作業風景） -->
-        <div class="photo-slot" style="top: 60mm; left: 8mm; width: 54mm; height: 42mm;" onclick="triggerUpload(this)">
-          <div class="placeholder-text">
-            <span>📷 + 写真を選択</span>
-            学校での作業風景
-          </div>
-          <img src="" alt="Working" data-scale="1">
-          <div class="photo-controls" onclick="event.stopPropagation()">
-            <button onclick="zoomImage(this, 0.1)" title="拡大">＋</button>
-            <button onclick="zoomImage(this, -0.1)" title="縮小">－</button>
-            <button onclick="removeImage(this)" title="削除">×</button>
-          </div>
-        </div>
-
-        <div class="cloud-bubble handwriting" style="top: 112mm; left: 6mm; width: 78mm; font-size: 13.5pt;" contenteditable="true">
-          I'm studying <span class="underline-solid">product design</span> at school.<br>
-          In this photo, I'm making a model.
-        </div>
-
-        <!-- 4. 中央：自分の顔写真 -->
-        <div class="photo-slot" style="top: 68mm; left: 72mm; width: 38mm; height: 44mm; border-radius: 45% 45% 35% 35%;" onclick="triggerUpload(this)">
-          <div class="placeholder-text">
-            <span>📷 + 写真を選択</span>
-            自分の顔写真
-          </div>
-          <img src="" alt="Me" data-scale="1">
-          <div class="photo-controls" style="bottom: 6px; right: 12px;" onclick="event.stopPropagation()">
-            <button onclick="zoomImage(this, 0.1)" title="拡大">＋</button>
-            <button onclick="zoomImage(this, -0.1)" title="縮小">－</button>
-            <button onclick="removeImage(this)" title="削除">×</button>
-          </div>
-        </div>
-        <div class="handwriting" style="top: 113mm; left: 74mm; font-size: 12pt; width: 36mm; text-align: center;" contenteditable="true">
-          Your Name
-        </div>
-
-        <div class="handwriting" style="top: 66mm; left: 115mm; font-size: 15pt;" contenteditable="true">
-          👑 This is me!
-        </div>
-
-        <!-- 5. 右下：ビデオゲーム -->
-        <div class="oval-bubble handwriting" style="top: 102mm; right: 6mm; width: 64mm; font-size: 14pt;" contenteditable="true">
-          I love <span class="underline-solid">video games.</span><br>
-          I often play them<br>
-          on weekends! 🎮
-        </div>
-
-        <div class="photo-slot" style="bottom: 6mm; right: 6mm; width: 62mm; height: 68mm;" onclick="triggerUpload(this)">
-          <div class="placeholder-text">
-            <span>📷 + 写真を選択</span>
-            ゲーム機や好きなゲーム画面
-          </div>
-          <img src="" alt="Video Games" data-scale="1">
-          <div class="photo-controls" onclick="event.stopPropagation()">
-            <button onclick="zoomImage(this, 0.1)" title="拡大">＋</button>
-            <button onclick="zoomImage(this, -0.1)" title="縮小">－</button>
-            <button onclick="removeImage(this)" title="削除">×</button>
-          </div>
-        </div>
-
-        <!-- 6. 左下：家族紹介エリア -->
-        <div class="family-zone">
-          <div class="handwriting" style="position: static; font-size: 17pt; font-weight: bold; margin-bottom: 2px;">
-            My Family
-          </div>
-          <div class="handwriting" style="position: static; font-size: 12.5pt; line-height: 1.2;" contenteditable="true">
-            • This is my mother. She is good at <span class="underline-solid">cooking.</span><br>
-            • This is my father. He likes <span class="underline-solid">castles.</span><br>
-            • This is my older sister. She is good at <span class="underline-solid">drawing.</span>
-          </div>
-
-          <!-- 家族写真スペース -->
-          <div style="display: flex; gap: 4mm; margin-top: 3mm; height: 36mm;">
-            <div class="photo-slot" style="position: relative; flex: 1; height: 100%; border-radius: 12px;" onclick="triggerUpload(this)">
-              <div class="placeholder-text">
-                <span>📷 +</span>
-                母の写真
-              </div>
-              <img src="" alt="Mother" data-scale="1">
-              <div class="photo-controls" onclick="event.stopPropagation()">
-                <button onclick="zoomImage(this, 0.1)">＋</button>
-                <button onclick="zoomImage(this, -0.1)">－</button>
-                <button onclick="removeImage(this)">×</button>
-              </div>
-            </div>
-            <div class="photo-slot" style="position: relative; flex: 1; height: 100%; border-radius: 12px;" onclick="triggerUpload(this)">
-              <div class="placeholder-text">
-                <span>📷 +</span>
-                父の写真
-              </div>
-              <img src="" alt="Father" data-scale="1">
-              <div class="photo-controls" onclick="event.stopPropagation()">
-                <button onclick="zoomImage(this, 0.1)">＋</button>
-                <button onclick="zoomImage(this, -0.1)">－</button>
-                <button onclick="removeImage(this)">×</button>
-              </div>
-            </div>
-            <div class="photo-slot" style="position: relative; flex: 1; height: 100%; border-radius: 12px;" onclick="triggerUpload(this)">
-              <div class="placeholder-text">
-                <span>📷 +</span>
-                姉の写真
-              </div>
-              <img src="" alt="Sister" data-scale="1">
-              <div class="photo-controls" onclick="event.stopPropagation()">
-                <button onclick="zoomImage(this, 0.1)">＋</button>
-                <button onclick="zoomImage(this, -0.1)">－</button>
-                <button onclick="removeImage(this)">×</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 手書き風の矢印（SVG） -->
-        <svg class="arrows-layer" viewBox="0 0 182 260">
-          <!-- LOTRへの矢印 -->
-          <path d="M 105 18 Q 112 22 118 24" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-          <path d="M 115 21 L 119 24 L 114 26" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-
-          <!-- 自分への矢印 -->
-          <path d="M 114 70 Q 108 72 103 75" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-          <path d="M 106 71 L 102 75 L 107 76" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-
-          <!-- 作業風景への矢印 -->
-          <path d="M 14 112 Q 10 105 15 98" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-          <path d="M 11 101 L 15 97 L 17 102" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-
-          <!-- ゲームへの矢印 -->
-          <path d="M 145 142 Q 142 152 145 162" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-          <path d="M 142 159 L 145 163 L 148 159" fill="none" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-
       </div>
-    </div>
+    </section>
+
+    <!-- TAB 2: Calculator Dojo -->
+    <section id="panel-calc" class="hidden space-y-3">
+      <div class="grid grid-cols-1 gap-3">
+        <!-- Calc 1: Density -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2.5">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h2 class="font-bold text-sm">【計算①】鉄の密度 d [g/cm³]（毎年4点必出）</h2>
+            <button onclick="genCalc1()" class="px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-semibold">類題を変える</button>
+          </div>
+          <p id="c1-q" class="text-xs sm:text-sm bg-[var(--background)] p-3 rounded-lg border border-[var(--border)] leading-relaxed"></p>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="c1-ans" type="number" step="0.01" placeholder="例: 7.63" class="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm w-36 font-mono" />
+            <span class="text-xs font-bold">g/cm³</span>
+            <button onclick="checkCalc1()" class="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">判定</button>
+          </div>
+          <div id="c1-fb" class="text-xs hidden p-2.5 rounded-lg border"></div>
+        </div>
+
+        <!-- Calc 2: Tensile -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2.5">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h2 class="font-bold text-sm">【計算②】引張試験 応力・ひずみ・伸び（毎年6〜9点必出）</h2>
+            <button onclick="genCalc2()" class="px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-semibold">類題を変える</button>
+          </div>
+          <p id="c2-q" class="text-xs sm:text-sm bg-[var(--background)] p-3 rounded-lg border border-[var(--border)] leading-relaxed"></p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs font-bold whitespace-nowrap">応力 σ:</label>
+              <input id="c2-s" type="number" step="0.1" placeholder="MPa" class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs w-full font-mono" />
+              <span class="text-xs">MPa</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs font-bold whitespace-nowrap">ひずみ ε:</label>
+              <input id="c2-e" type="number" step="0.00001" placeholder="0.0003" class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs w-full font-mono" />
+              <span class="text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">(単位なし)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs font-bold whitespace-nowrap">伸び λ:</label>
+              <input id="c2-l" type="number" step="0.001" placeholder="mm" class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs w-full font-mono" />
+              <span class="text-xs">mm</span>
+            </div>
+          </div>
+          <button onclick="checkCalc2()" class="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">3つまとめて判定</button>
+          <div id="c2-fb" class="text-xs hidden p-2.5 rounded-lg border"></div>
+        </div>
+
+        <!-- Calc 3: Lever Rule -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2.5">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h2 class="font-bold text-sm">【計算③】てこの原理 質量割合 r（毎年4点必出・引っかけ注意）</h2>
+            <button onclick="genCalc3()" class="px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-semibold">類題を変える</button>
+          </div>
+          <p id="c3-q" class="text-xs sm:text-sm bg-[var(--background)] p-3 rounded-lg border border-[var(--border)] leading-relaxed"></p>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="c3-ans" type="number" step="0.01" placeholder="例: 3.20" class="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm w-36 font-mono" />
+            <button onclick="checkCalc3()" class="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">判定</button>
+          </div>
+          <div id="c3-fb" class="text-xs hidden p-2.5 rounded-lg border"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Alloy & JIS Drill -->
+    <section id="panel-drill" class="hidden space-y-3">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-sm">🎯 合金元素の振り分け（12点満点チャレンジ）</h2>
+          <button onclick="resetAlloyDrill()" class="text-xs px-2.5 py-1 rounded border border-[var(--border)]">リセット</button>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">選択肢 <b>[ Al, Ca, Cr, S, Si, Ni, Mo ]</b> から該当する元素をすべてONにして判定してください（Crの罠に注意！）</p>
+        <div id="alloy-rows" class="space-y-2"></div>
+        <div class="flex items-center gap-3">
+          <button onclick="checkAlloyDrill()" class="px-4 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold">採点する (12点満点)</button>
+          <span id="alloy-result" class="text-xs font-bold"></span>
+        </div>
+      </div>
+
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-sm">🏷️ JIS材料記号「数字の意味」4択瞬発ドリル</h2>
+          <span id="jis-score" class="text-xs font-mono font-bold"></span>
+        </div>
+        <div id="jis-drill-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Terms -->
+    <section id="panel-terms" class="hidden space-y-3">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+        <div class="flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <h2 class="font-bold text-sm">✍️ 80〜100字 語句説明 虫食い暗唱チェック（厳選10語＋α）</h2>
+            <p class="text-xs text-[var(--muted-foreground)]">タップすると赤字の重要キーワード（指定語句）が隠れたり表示されたりします</p>
+          </div>
+          <button onclick="toggleAllMasks()" class="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs font-bold">一括 隠す/表示</button>
+        </div>
+        <div id="terms-container" class="space-y-2"></div>
+      </div>
+    </section>
+
   </div>
 
   <script>
-    let currentSlot = null;
-    const fileInput = document.getElementById('imageInput');
+    // ===== FLASHCARDS DATA =====
+    const CARDS = [
+      { id: 1, cat: '状態図・組織', q: '鋼の共析点（A₁変態点）の温度と炭素濃度は？（単位必須）', a: '温度：727℃\n炭素濃度：0.77%', hint: '状態図の水平線' },
+      { id: 2, cat: '状態図・組織', q: '純鉄の A₃変態点、A₂変態点、A₄変態点の温度は？', a: 'A₃点：912℃（bcc⇄fccの変態）\nA₂点：770℃（磁気変態・キュリー温度）\nA₄点：1394℃（fcc⇄δ鉄）', hint: '過去問頻出は912℃！' },
+      { id: 3, cat: '状態図・組織', q: 'フェライトとオーステナイトに固溶する「最大炭素濃度」はそれぞれ何%？', a: 'フェライト（α鉄）：0.022%（または0.02%）\nオーステナイト（γ鉄）：2.14%\n（※セメンタイトFe₃Cは6.67%）', hint: '2.14%を超えると「鋳鉄」になる' },
+      { id: 4, cat: '状態図・組織', q: 'Fe-Fe₃C状態図で「912℃〜1394℃の広い単相領域」と「727℃の水平線より下すべて」の相名は？', a: '中央の広い単相：オーステナイト単相\n727℃より下すべて：フェライト相＋セメンタイト相', hint: '過去問大問3.1の定番' },
+      { id: 5, cat: '状態図・組織', q: 'Fe-Fe₃C状態図で「912℃〜727℃の左下三角形」と「Acm線の下〜727℃の右下領域」の相名は？', a: '左下（フェライトとオーステナイトの間）：フェライト相＋オーステナイト相\n右下（Acm線の下）：オーステナイト相＋セメンタイト相', hint: '左右の両隣を足すだけ' },
+      { id: 6, cat: '状態図・組織', q: '炭素濃度「0.02〜0.77%」「0.77%付近」「0.77〜2.14%」の炭素鋼の名称と標準組織（徐冷時）は？', a: '・0.02〜0.77%：亜共析鋼 ／ 初析フェライト＋パーライト\n・0.77%付近：共析鋼 ／ パーライトのみ\n・0.77〜2.14%：過共析鋼 ／ 初析セメンタイト＋パーライト', hint: '2年連続で9〜12点出題の超重要表！' },
+      { id: 7, cat: '結晶格子・隙間', q: '体心立方格子（bcc）の配位数・格子中の原子数・1辺の長さ(r比)・充填率・代表金属は？', a: '配位数：8 ／ 原子数：2 ／ 辺：4√3/3 r（=4r/√3）\n充填率：68% ／ 性質：2番目に展延性高い\n代表：常温のFe, Cr, W, Mo, アルカリ金属', hint: '2025年大問1.1 (20点表) の一部' },
+      { id: 8, cat: '結晶格子・隙間', q: '面心立方格子（fcc）の配位数・格子中の原子数・1辺の長さ(r比)・充填率・代表金属は？', a: '配位数：12 ／ 原子数：4 ／ 辺：2√2 r（=4r/√2）\n充填率：74% ／ 性質：対称性が高く最も展延性に優れる\n代表：Al, Cu, Ni, 912℃以上のFe', hint: '1000℃の鉄はこれ！' },
+      { id: 9, cat: '結晶格子・隙間', q: '稠密六方格子（hcp）の配位数・格子中の原子数・底面と高さ(r比)・充填率・代表金属は？', a: '配位数：12 ／ 原子数：2（六角柱の1/3単位）\n底面：2r、高さ：4√6/3 r ／ 充填率：74%\n性質：対称性が低く硬くて脆い（Ti, Mg, Zn）', hint: '原子数「2」に注意！（六角柱全体6÷3=2）' },
+      { id: 10, cat: '結晶格子・隙間', q: 'bccで隣接原子の次に近い原子がある方向（ミラー指数）と、常温鉄(r=0.124 nm, a=0.286 nm)の隙間の大きさは？', a: '方向：<100>（または[100]等）\n隙間：a - 2r = 0.286 - 2×0.124 = 0.038 nm\n（※1000℃のfcc(r=0.129nm)では 0.107 nm）', hint: '一辺aから両端の半径2rを引くだけ' },
+      { id: 11, cat: '結晶格子・隙間', q: 'fccとbccではどちらが多く炭素を固溶できるか。また、1000℃の炭素鋼を急冷する熱処理名と得られる組織名は？', a: '多いのは：面心立方構造（fcc）※隙間0.107nmが大きく格子歪みが小さいため\n熱処理：焼入れ ／ 組織：マルテンサイト（bct構造・非常に硬く脆い）', hint: '炭素原子の直径は0.140 nm' },
+      { id: 12, cat: '熱処理・鋳鉄', q: '炭素鋼の「焼入れ・焼ならし・完全焼なまし・焼戻し」の冷却方法は？（速い順に）', a: '1. 焼入れ：水冷・油冷（急冷）\n2. 焼ならし：空冷\n3. 完全焼なまし：徐冷（炉冷）\n4. 焼戻し：水冷・油冷・空冷（※A₁線より下で加熱！）', hint: '水・油 ＞ 空 ＞ 炉' },
+      { id: 13, cat: '熱処理・鋳鉄', q: '焼入れ・焼ならし・焼なまし・焼戻しのうち、「過共析鋼でAcm線より上」に加熱するものと、「A₁線より下」に加熱するものは？', a: '・過共析鋼でAcm線より上：焼ならし\n・A₁線より下：焼戻し\n（※焼入れ・完全焼なましは亜共析A₃・過共析A₁より上）', hint: '2024年大問4の最重要引っかかりポイント' },
+      { id: 14, cat: '熱処理・鋳鉄', q: '焼入れした鋼を400℃、600℃で焼戻しするとそれぞれ何という組織になるか。またこの操作を何というか。', a: '400℃：トルースタイト\n600℃：ソルバイト（最も粘り強い）\n操作名：調質', hint: '温度が高いほど軟らかく粘り強くなる' },
+      { id: 15, cat: '熱処理・鋳鉄', q: '「白鋳鉄」と「ねずみ鋳鉄」について、冷却速度・C,Si量・肉厚・収縮量の違いは？', a: '白鋳鉄：冷却「大」／C,Si「少ない」／肉厚「薄い」／収縮「大きい」\nねずみ鋳鉄：冷却「小」／C,Si「多い」／肉厚「厚い」／収縮「小さい」', hint: '語呂：白は急いで薄着で縮む' },
+      { id: 16, cat: 'JIS・合金元素', q: '引張強さを向上させる合金元素で、絶対に選んではいけない引っかかり元素は？また、引張強さを向上させる元素群は？', a: '絶対NG：Cr（クロム）※Coも不可\n引張強さ向上：Al, Si, Ti, Ni, Mn, Mo', hint: 'CrとCoは固溶強化が小さい！' },
+      { id: 17, cat: 'JIS・合金元素', q: '「焼入れ性」「耐食性」「被削性」をそれぞれ向上させる合金元素は？', a: '・焼入れ性：Cr, Si, Ni, Mn, Mo\n・耐食性：Cr, Ni, Mo（ステンレス3兄弟）\n・被削性：Ca, S, Pb（快削鋼トリオ）', hint: 'Ni, Moは引張・焼入・耐食すべてに入る！' },
+      { id: 18, cat: 'JIS・合金元素', q: 'JIS記号「SS400 / SM490 / FC250」の種類と数字の意味は？', a: 'SS400：一般構造用圧延鋼材（引張強さ400 N/mm²以上）\nSM490：溶接構造用圧延鋼材（引張強さ490 N/mm²以上）\nFC250：ねずみ鋳鉄（引張強さ250 N/mm²以上）', hint: '数字＝最小引張強さグループ' },
+      { id: 19, cat: 'JIS・合金元素', q: 'JIS記号「FCD350-22」「FCMB300-6」「FCMW」「FCMP」の種類と数字の意味は？', a: 'FCD350-22：球状黒鉛鋳鉄（引張強さ350 N/mm²以上、伸び22%以上）\nFCMB300-6：黒心可鍛鋳鉄（引張300以上、伸び6%以上）\n※W=白心、P=パーライト可鍛鋳鉄', hint: 'ハイフン付き2連数字は「強さと伸び」' },
+      { id: 20, cat: 'JIS・合金元素', q: 'JIS記号「S45C」「S09CK」「SK120」の種類と数字の意味は？', a: 'S45C：機械構造用炭素鋼（炭素含有量 0.45%）\nS09CK：機械構造用炭素鋼・はだ焼用（炭素 0.09%）\nSK120：工具用炭素鋼［炭素工具鋼］（炭素含有量 1.20%）', hint: '100で割って炭素濃度%にする！' },
+      { id: 21, cat: 'JIS・合金元素', q: 'JIS記号「SCr435」「SCM440H」「SNC415H」「SNCM220H」「SMn433H」の種類と数字の意味は？', a: '・SCr435：クロム鋼（炭素 0.35%）\n・SCM440H：クロムモリブデン鋼（炭素 0.40%）\n・SNC415H：ニッケルクロム鋼（炭素 0.15%）\n・SNCM220H：ニッケルクロムモリブデン鋼（炭素 0.20%）\n・SMn433H：マンガン鋼［H鋼］（炭素 0.33%）', hint: '3桁数字は「1桁目無視・下2桁＝0.XX%」！末尾H＝焼入れ性保証H鋼' },
+      { id: 22, cat: 'JIS・合金元素', q: 'JIS記号「SUS304」「SKH2」の種類・数字の意味・主な用途は？', a: 'SUS304：ステンレス鋼／種類番号／シンク・調理台・化学配管\nSKH2：高速度工具鋼（ハイス）／種類番号／切削工具・金型材料', hint: 'S＋英字3文字系は「種類番号」' },
+      { id: 23, cat: '状態図・組織', q: '金属組織試験の顕微鏡写真で「白い粒のみ」「層状の縞模様のみ」「白い粒＋黒いパーライト」「粒界に白い網目」はそれぞれ何？', a: '白い粒のみ：純鉄（フェライト）\n縞模様のみ：共析鋼（パーライト）\n白＋黒混在：亜共析鋼（初析フェライト＋パーライト）\n粒界に白い網目：過共析鋼（初析セメンタイト＋パーライト）', hint: '第4回課題問5の写真問題' },
+      { id: 24, cat: '結晶格子・隙間', q: 'X線回折（ブラッグの法則）で波長λ、回折角θ、(hkl)面から格子定数aを求める式は？', a: 'd = λ ÷ (2 sinθ)\na = d × √(h² + k² + l²)', hint: '(111)面なら d×√3 するだけ' },
+      { id: 25, cat: '結晶格子・隙間', q: '温度 t [℃] における空孔濃度 Cv を求める公式で、絶対に忘れない注意点は？', a: 'Cv = exp( -Qv ÷ (kB × (t + 273)) )\n注意点：摂氏℃を「+273」して絶対温度Kに直すこと！', hint: '第2回課題問1' },
+      { id: 26, cat: '状態図・組織', q: 'ギブスの相律の公式 F = C - P + 2 において、単体の水（C=1）で「固相のみ」「固液共存」の自由度Fは？', a: '固相のみ（P=1）：F = 1 - 1 + 2 = 2（領域＝面）\n固液共存（P=2）：F = 1 - 2 + 2 = 1（相境界＝線）', hint: '三重点(P=3)ならF=0' },
+      { id: 27, cat: '熱処理・鋳鉄', q: 'SUS304（オーステナイト系）とSUS430（フェライト系）・SUS410（マルテンサイト系）で「磁石にくっつかない（非磁性）」のはどれ？', a: 'SUS304（オーステナイト系）が非磁性！\n※SUS430やSUS410は磁性があり磁石につく。', hint: '第6回講義スライドP30' },
+      { id: 28, cat: '熱処理・鋳鉄', q: '鉄鋼材料の5元素（C, Si, Mn, P, S）のうち、有害で特に「赤熱脆性」の原因になる元素と、「低温脆性」の原因になる元素は？', a: '赤熱脆性：S（硫黄）※MnSにして除去\n低温脆性・割れ：P（りん）', hint: '第4回講義スライドP10' }
+    ];
 
-    // 写真枠がクリックされたらファイル選択を開く
-    function triggerUpload(slotElement) {
-      currentSlot = slotElement;
-      fileInput.value = ''; // 同じファイル再選択対応
-      fileInput.click();
-    }
+    let cardState = {};
+    let currentFilter = 'all';
+    let currentCategory = 'all';
+    let filteredIndices = CARDS.map((_, i) => i);
+    let currentPos = 0;
+    let isFlipped = false;
 
-    // 画像ファイルが選択された時の処理
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file || !currentSlot) return;
-
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const img = currentSlot.querySelector('img');
-        img.src = event.target.result;
-        img.dataset.scale = '1';
-        img.style.transform = 'scale(1)';
-        currentSlot.classList.add('has-image');
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // 画像の拡大・縮小
-    function zoomImage(btn, delta) {
-      const slot = btn.closest('.photo-slot');
-      const img = slot.querySelector('img');
-      let scale = parseFloat(img.dataset.scale || '1');
-      scale = Math.min(Math.max(0.5, scale + delta), 3.0);
-      img.dataset.scale = scale.toFixed(1);
-      img.style.transform = `scale(${scale})`;
-    }
-
-    // 画像の削除
-    function removeImage(btn) {
-      const slot = btn.closest('.photo-slot');
-      const img = slot.querySelector('img');
-      img.src = '';
-      slot.classList.remove('has-image');
-    }
-
-    // html2pdf.js を使った直接PDFダウンロード処理
-    function downloadPDF() {
-      const btn = document.getElementById('downloadPdfBtn');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '⏳ PDF生成中...';
-      btn.disabled = true;
-
-      // 未入力の点線枠を一時的に非表示にする
-      const emptySlots = document.querySelectorAll('.photo-slot:not(.has-image)');
-      emptySlots.forEach(slot => slot.style.visibility = 'hidden');
-
-      // 操作ボタン（＋/－/×）を一時的に非表示にする
-      const controls = document.querySelectorAll('.photo-controls');
-      controls.forEach(ctrl => ctrl.style.display = 'none');
-
-      const element = document.getElementById('a4Sheet');
-      const opt = {
-        margin:       0,
-        filename:     'Letter_to_Host_Family.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      html2pdf().set(opt).from(element).save().then(() => {
-        // 元の表示状態に戻す
-        emptySlots.forEach(slot => slot.style.visibility = 'visible');
-        controls.forEach(ctrl => ctrl.style.display = '');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-      }).catch(err => {
-        console.error(err);
-        emptySlots.forEach(slot => slot.style.visibility = 'visible');
-        controls.forEach(ctrl => ctrl.style.display = '');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    function switchTab(name) {
+      ['cards', 'calc', 'drill', 'terms'].forEach(t => {
+        document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+        const btn = document.getElementById('tab-' + t);
+        if (t === name) {
+          btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--primary)] text-[var(--primary-foreground)] transition';
+        } else {
+          btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] hover:opacity-80 transition';
+        }
       });
     }
-  </script>
 
+    function updateScoreMeter() {
+      const mastered = CARDS.filter(c => cardState[c.id] === true).length;
+      const est = Math.min(85, Math.round(12 + (mastered / CARDS.length) * 73));
+      document.getElementById('est-score').textContent = `${est} / 85点`;
+      document.getElementById('est-bar').style.width = `${Math.round((est / 85) * 100)}%`;
+      document.getElementById('mastered-count').textContent = `暗記カード習得: ${mastered} / ${CARDS.length}`;
+    }
+
+    function rebuildFilter() {
+      filteredIndices = CARDS.map((c, idx) => ({ c, idx }))
+        .filter(({ c }) => (currentCategory === 'all' || c.cat === currentCategory))
+        .filter(({ c }) => (currentFilter === 'all' || cardState[c.id] !== true))
+        .map(x => x.idx);
+      if (currentPos >= filteredIndices.length) currentPos = 0;
+      isFlipped = false;
+      renderCard();
+    }
+
+    function setCardFilter(f) {
+      currentFilter = f;
+      document.getElementById('flt-all').className = f === 'all' ? 'px-2.5 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold' : 'px-2.5 py-1 rounded border border-[var(--border)] text-xs font-semibold';
+      document.getElementById('flt-weak').className = f === 'weak' ? 'px-2.5 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold' : 'px-2.5 py-1 rounded border border-[var(--border)] text-xs font-semibold';
+      rebuildFilter();
+    }
+
+    function setCardCategory(cat) {
+      currentCategory = cat;
+      rebuildFilter();
+    }
+
+    function renderCard() {
+      if (filteredIndices.length === 0) {
+        document.getElementById('card-progress').textContent = '0 / 0';
+        document.getElementById('card-cat').textContent = '完了！';
+        document.getElementById('card-side-badge').textContent = '';
+        document.getElementById('card-content').textContent = '🎉 この条件の未習得カードはすべて「覚えた！」になりました！';
+        document.getElementById('card-hint').textContent = '「全問」に切り替えるか、計算道場・プリント裏面に進みましょう。';
+        return;
+      }
+      const c = CARDS[filteredIndices[currentPos]];
+      document.getElementById('card-progress').textContent = `${currentPos + 1} / ${filteredIndices.length}`;
+      const statusLabel = cardState[c.id] === true ? ' ✅習得済' : (cardState[c.id] === false ? ' ⚠️要復習' : '');
+      document.getElementById('card-cat').textContent = c.cat + statusLabel;
+      document.getElementById('card-side-badge').textContent = isFlipped ? '【答え】' : '【問題】タップ/Spaceでめくる';
+      document.getElementById('card-content').textContent = isFlipped ? c.a : c.q;
+      document.getElementById('card-content').className = isFlipped
+        ? 'my-4 text-sm sm:text-base font-bold leading-relaxed whitespace-pre-line text-[var(--success)]'
+        : 'my-4 text-base sm:text-lg font-bold leading-relaxed whitespace-pre-line';
+      document.getElementById('card-hint').textContent = isFlipped ? '' : `💡ヒント: ${c.hint}`;
+    }
+
+    function flipCard() {
+      if (filteredIndices.length === 0) return;
+      isFlipped = !isFlipped;
+      renderCard();
+    }
+
+    function prevCard() {
+      if (filteredIndices.length === 0) return;
+      currentPos = (currentPos - 1 + filteredIndices.length) % filteredIndices.length;
+      isFlipped = false;
+      renderCard();
+    }
+
+    function markCard(ok) {
+      if (filteredIndices.length === 0) return;
+      const c = CARDS[filteredIndices[currentPos]];
+      cardState[c.id] = ok;
+      updateScoreMeter();
+      if (currentFilter === 'weak' && ok) {
+        rebuildFilter();
+      } else {
+        currentPos = (currentPos + 1) % filteredIndices.length;
+        isFlipped = false;
+        renderCard();
+      }
+    }
+
+    // Keyboard support for cards
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('panel-cards').classList.contains('hidden')) return;
+      if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+    });
+
+    // ===== CALC DOJO =====
+    let c1Data = {};
+    function genCalc1(preset) {
+      const cases = [
+        { name: '鉄(1000℃・面心立方構造)', n: 4, struct: '面心立方構造', M: 55.8, r: 0.129, a: null, ans: 7.63 },
+        { name: '鉄(常温・体心立方構造)', n: 2, struct: '体心立方構造', M: 55.8, r: null, a: 0.286, ans: 7.92 },
+        { name: 'アルミニウム(常温・面心立方構造)', n: 4, struct: '面心立方構造', M: 27.0, r: null, a: 0.405, ans: 2.70 },
+        { name: '鉄(常温・体心立方構造・類題)', n: 2, struct: '体心立方構造', M: 55.8, r: 0.124, a: null, ans: 7.92 }
+      ];
+      c1Data = preset || cases[Math.floor(Math.random() * cases.length)];
+      if (c1Data.r !== null) {
+        document.getElementById('c1-q').innerHTML = `${c1Data.name}における原子半径は <b>r = ${c1Data.r} nm</b> である。この条件での密度を求めよ。原子量は <b>${c1Data.M}</b>、アボガドロ定数は <b>6.02×10²³</b> とする。`;
+      } else {
+        document.getElementById('c1-q').innerHTML = `${c1Data.name}の格子定数は <b>a = ${c1Data.a} nm</b> である。この条件での密度を求めよ。原子量は <b>${c1Data.M}</b>、アボガドロ定数は <b>6.02×10²³</b> とする。`;
+      }
+      document.getElementById('c1-ans').value = '';
+      document.getElementById('c1-fb').classList.add('hidden');
+    }
+
+    function checkCalc1() {
+      const val = parseFloat(document.getElementById('c1-ans').value);
+      const fb = document.getElementById('c1-fb');
+      fb.classList.remove('hidden');
+      if (isNaN(val)) { fb.innerHTML = '数値を入力してください。'; return; }
+      const a = c1Data.a !== null ? c1Data.a : (c1Data.n === 4 ? 2 * Math.SQRT2 * c1Data.r : (4 / Math.sqrt(3)) * c1Data.r);
+      const exact = (c1Data.n * c1Data.M) / (6.02e23 * Math.pow(a * 1e-7, 3));
+      const wrongN = ( (c1Data.n === 4 ? 2 : 4) * c1Data.M ) / (6.02e23 * Math.pow(a * 1e-7, 3));
+      if (Math.abs(val - exact) <= 0.15) {
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--success)] bg-[var(--background)] text-[var(--success)] font-bold';
+        fb.innerHTML = `✅ 正解！（計算値: ${exact.toFixed(2)} g/cm³）　式：(${c1Data.n} × ${c1Data.M}) ÷ (6.02×10²³ × (${a.toFixed(4)}×10⁻⁷)³)`;
+      } else {
+        let diag = '';
+        if (Math.abs(val - wrongN) <= 0.25) {
+          diag = `⚠️ <b>診断：格子中の原子数 n を間違えています！</b> ${c1Data.struct} の原子数は <b>${c1Data.n}個</b> です（bcc=2, fcc=4）。`;
+        } else if (val < 0.01 || val > 1000) {
+          diag = `⚠️ <b>診断：nm → cm（×10⁻⁷）の単位換算か 3乗 のカッコ位置がズレています！</b>`;
+        } else {
+          diag = `⚠️ もう一度電卓のカッコを確認！`;
+        }
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--error)] bg-[var(--background)]';
+        fb.innerHTML = `${diag}<br>正解は <b>${exact.toFixed(2)} g/cm³</b>。式：a = ${a.toFixed(4)} nm → (${c1Data.n}×${c1Data.M}) ÷ (6.02×10²³ × (${a.toFixed(4)}×10⁻⁷)³)`;
+      }
+    }
+
+    let c2Data = {};
+    function genCalc2() {
+      const cases = [
+        { d: 10, l: 100, FkN: 5.0, E: 212 }, // 2025年そのまま
+        { d: 20, l: 100, FkN: 10, E: 206 },  // 第3回課題そのまま
+        { d: 10, l: 200, FkN: 8.0, E: 200 },
+        { d: 14, l: 100, FkN: 12.0, E: 210 }
+      ];
+      c2Data = cases[Math.floor(Math.random() * cases.length)];
+      document.getElementById('c2-q').innerHTML = `直径 <b>${c2Data.d} mm</b>、長さ <b>${c2Data.l} mm</b> の試験片に <b>${c2Data.FkN} kN</b> の荷重が作用する時の応力 σ [MPa]、ひずみ ε、伸び変形量 λ [mm] を求めよ。円周率は <b>3.14</b>、ヤング率 E は <b>${c2Data.E} GPa</b> とする。`;
+      ['c2-s', 'c2-e', 'c2-l'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('c2-fb').classList.add('hidden');
+    }
+
+    function checkCalc2() {
+      const vs = parseFloat(document.getElementById('c2-s').value);
+      const ve = parseFloat(document.getElementById('c2-e').value);
+      const vl = parseFloat(document.getElementById('c2-l').value);
+      const fb = document.getElementById('c2-fb');
+      fb.classList.remove('hidden');
+      const r = c2Data.d / 2;
+      const A = 3.14 * r * r;
+      const sigma = (c2Data.FkN * 1000) / A;
+      const eps = sigma / (c2Data.E * 1000);
+      const lam = c2Data.l * eps;
+      const wrongDiameter = (c2Data.FkN * 1000) / (3.14 * c2Data.d * c2Data.d);
+
+      const okS = !isNaN(vs) && Math.abs(vs - sigma) / sigma < 0.04;
+      const okE = !isNaN(ve) && Math.abs(ve - eps) / eps < 0.06;
+      const okL = !isNaN(vl) && Math.abs(vl - lam) / lam < 0.06;
+
+      if (okS && okE && okL) {
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--success)] bg-[var(--background)] text-[var(--success)] font-bold';
+        fb.innerHTML = `✅ 全問正解！ σ = ${sigma.toFixed(1)} MPa, ε = ${eps.toExponential(2)}, λ = ${lam.toFixed(3)} mm`;
+      } else {
+        let msgs = [];
+        if (!okS) {
+          if (!isNaN(vs) && Math.abs(vs - wrongDiameter) / wrongDiameter < 0.06) {
+            msgs.push('🚨 <b>応力σ：直径を2で割り忘れて半径にしていません！</b>（A = 3.14 × (d/2)²）');
+          } else {
+            msgs.push(`❌ 応力σ 正解: <b>${sigma.toFixed(1)} MPa</b>（= ${c2Data.FkN*1000} ÷ (3.14×${r}²)）`);
+          }
+        }
+        if (!okE) msgs.push(`❌ ひずみε 正解: <b>${eps.toFixed(5)}</b>（= σ ÷ (${c2Data.E}×1000)）※GPaを1000倍してMPaに揃える！`);
+        if (!okL) msgs.push(`❌ 伸びλ 正解: <b>${lam.toFixed(3)} mm</b>（= ${c2Data.l} × ε）`);
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--error)] bg-[var(--background)]';
+        fb.innerHTML = msgs.join('<br>');
+      }
+    }
+
+    let c3Data = {};
+    function genCalc3() {
+      const cases = [
+        { c: 0.20, mode: 'ferrite_per_aust', text: 'オーステナイトを1としたときに対するフェライトの質量の割合' }, // 2025そのまま
+        { c: 0.32, mode: 'aust_per_ferrite', text: 'フェライトに対するオーステナイトの質量の割合' }, // 2024そのまま
+        { c: 0.45, mode: 'ferrite_total', text: '全体に対する初析フェライトの割合' }, // 第2回課題6
+        { c: 0.50, mode: 'ferrite_per_aust', text: 'オーステナイトを1としたときに対するフェライトの質量の割合' }
+      ];
+      c3Data = cases[Math.floor(Math.random() * cases.length)];
+      document.getElementById('c3-q').innerHTML = `炭素濃度 <b>${c3Data.c.toFixed(2)}%</b> の炭素鋼を徐冷する。727℃になる直前における、<b>${c3Data.text} r</b> を求めよ。（フェライト固溶限=0.022%, 共析点=0.77%）`;
+      document.getElementById('c3-ans').value = '';
+      document.getElementById('c3-fb').classList.add('hidden');
+    }
+
+    function checkCalc3() {
+      const val = parseFloat(document.getElementById('c3-ans').value);
+      const fb = document.getElementById('c3-fb');
+      fb.classList.remove('hidden');
+      const fLen = 0.77 - c3Data.c;
+      const aLen = c3Data.c - 0.022;
+      const tot = 0.77 - 0.022;
+      let exact = 0;
+      let formulaStr = '';
+      if (c3Data.mode === 'ferrite_per_aust') {
+        exact = fLen / aLen;
+        formulaStr = `(0.77 - ${c3Data.c.toFixed(2)}) ÷ (${c3Data.c.toFixed(2)} - 0.022)`;
+      } else if (c3Data.mode === 'aust_per_ferrite') {
+        exact = aLen / fLen;
+        formulaStr = `(${c3Data.c.toFixed(2)} - 0.022) ÷ (0.77 - ${c3Data.c.toFixed(2)})`;
+      } else {
+        exact = fLen / tot;
+        formulaStr = `(0.77 - ${c3Data.c.toFixed(2)}) ÷ (0.77 - 0.022)`;
+      }
+      if (!isNaN(val) && Math.abs(val - exact) <= 0.03) {
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--success)] bg-[var(--background)] text-[var(--success)] font-bold';
+        fb.innerHTML = `✅ 正解！ r = ${exact.toFixed(2)}　式：${formulaStr}`;
+      } else {
+        let diag = '';
+        if (!isNaN(val) && (Math.abs(val - 1 / exact) <= 0.06)) {
+          diag = '🚨 <b>診断：分母と分子が逆です！</b>「Aに対するB」は B ÷ A、かつてこの腕は反対側です！';
+        }
+        fb.className = 'text-xs p-2.5 rounded-lg border border-[var(--error)] bg-[var(--background)]';
+        fb.innerHTML = `${diag ? diag + '<br>' : ''}正解は <b>${exact.toFixed(2)}</b>。式：${formulaStr}`;
+      }
+    }
+
+    // ===== ALLOY & JIS DRILL =====
+    const ALLOY_ELS = ['Al', 'Ca', 'Cr', 'S', 'Si', 'Ni', 'Mo'];
+    const ALLOY_TARGETS = [
+      { label: '引張強さの向上', ans: ['Al', 'Si', 'Ni', 'Mo'] },
+      { label: '焼入れ性の向上', ans: ['Cr', 'Si', 'Ni', 'Mo'] },
+      { label: '耐食性の向上', ans: ['Cr', 'Ni', 'Mo'] },
+      { label: '被削性の向上', ans: ['Ca', 'S'] }
+    ];
+    let alloySel = ALLOY_TARGETS.map(() => new Set());
+
+    function renderAlloyDrill() {
+      const container = document.getElementById('alloy-rows');
+      container.innerHTML = ALLOY_TARGETS.map((row, rIdx) => `
+        <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+          <span class="text-xs font-bold w-32">${row.label}</span>
+          <div class="flex flex-wrap gap-1.5">
+            ${ALLOY_ELS.map(el => {
+              const on = alloySel[rIdx].has(el);
+              return `<button onclick="toggleAlloy(${rIdx}, '${el}')" class="px-2.5 py-1 rounded text-xs font-bold border transition ${on ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]' : 'bg-[var(--card)] border-[var(--border)]'}">${el}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+    function toggleAlloy(rIdx, el) {
+      if (alloySel[rIdx].has(el)) alloySel[rIdx].delete(el);
+      else alloySel[rIdx].add(el);
+      renderAlloyDrill();
+    }
+    function resetAlloyDrill() {
+      alloySel = ALLOY_TARGETS.map(() => new Set());
+      document.getElementById('alloy-result').textContent = '';
+      renderAlloyDrill();
+    }
+    function checkAlloyDrill() {
+      let score = 0;
+      let notes = [];
+      ALLOY_TARGETS.forEach((row, i) => {
+        const expected = new Set(row.ans);
+        const got = alloySel[i];
+        const same = expected.size === got.size && [...expected].every(x => got.has(x));
+        if (same) score += 3;
+        else notes.push(`${row.label}→[${row.ans.join(', ')}]`);
+      });
+      const res = document.getElementById('alloy-result');
+      if (score === 12) {
+        res.className = 'text-xs font-bold text-[var(--success)]';
+        res.textContent = '🎉 12 / 12点 満点！Crの罠を完全突破！';
+      } else {
+        res.className = 'text-xs font-bold text-[var(--error)]';
+        res.textContent = `${score} / 12点｜正解: ${notes.join(' ／ ')}`;
+      }
+    }
+
+    const JIS_ITEMS = [
+      { code: 'SS400', name: '一般構造用圧延鋼材', cat: '引張強さ', detail: '引張強さ 400 N/mm²以上' },
+      { code: 'SK120', name: '工具用炭素鋼', cat: '炭素濃度', detail: '炭素含有量 1.20%' },
+      { code: 'FCD350-22', name: '球状黒鉛鋳鉄', cat: '引張強さ＋伸び', detail: '引張強さ 350以上、伸び 22%以上' },
+      { code: 'SNCM220H', name: 'ニッケルクロムモリブデン鋼', cat: '炭素濃度', detail: '炭素含有量 0.20%' },
+      { code: 'SUS304', name: 'ステンレス鋼', cat: '種類番号', detail: '種類番号' },
+      { code: 'SKH2', name: '高速度工具鋼', cat: '種類番号', detail: '種類番号' },
+      { code: 'SMn433H', name: 'マンガン鋼(H鋼)', cat: '炭素濃度', detail: '炭素含有量 0.33%' },
+      { code: 'FCMB300-6', name: '黒心可鍛鋳鉄', cat: '引張強さ＋伸び', detail: '引張強さ 300以上、伸び 6%以上' }
+    ];
+    let jisStatus = {};
+    function renderJisDrill() {
+      const cats = ['引張強さ', '引張強さ＋伸び', '炭素濃度', '種類番号'];
+      const list = document.getElementById('jis-drill-list');
+      list.innerHTML = JIS_ITEMS.map((item, idx) => {
+        const st = jisStatus[idx];
+        return `
+          <div class="p-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-sm">${item.code} <span class="text-[11px] font-normal text-[var(--muted-foreground)]">(${item.name})</span></span>
+              ${st ? `<span class="text-[11px] font-bold ${st.ok ? 'text-[var(--success)]' : 'text-[var(--error)]'}">${st.ok ? '○ ' : '× '}${item.detail}</span>` : ''}
+            </div>
+            <div class="flex flex-wrap gap-1">
+              ${cats.map(c => `<button onclick="pickJis(${idx}, '${c}')" class="px-2 py-0.5 rounded text-[11px] border ${st && st.picked === c ? (st.ok ? 'bg-[var(--success)] text-white' : 'bg-[var(--error)] text-white') : 'bg-[var(--card)] border-[var(--border)]'}">${c}</button>`).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      const okCount = Object.values(jisStatus).filter(x => x.ok).length;
+      document.getElementById('jis-score').textContent = `正解: ${okCount} / ${JIS_ITEMS.length}`;
+    }
+    function pickJis(idx, cat) {
+      jisStatus[idx] = { picked: cat, ok: JIS_ITEMS[idx].cat === cat };
+      renderJisDrill();
+    }
+
+    // ===== TERMS CHECK =====
+    const TERMS = [
+      { title: '① 応力除去焼なまし（目的、再結晶）', body: '切削・塑性加工や溶接で生じた内部応力を除去する【目的】の焼なまし。450℃以上で起こる鋼の【再結晶】で低減されるため、500〜600℃に加熱後、徐冷する。' },
+      { title: '② サブゼロ処理（残留オーステナイト、マルテンサイト）', body: '高炭素鋼を焼入れ急冷した際に変態せず残った【残留オーステナイト】を、0℃以下に冷却して【マルテンサイト】に変態させる処理。焼割れを防ぐため処理後に湯戻し・焼戻しを行う。' },
+      { title: '③ 調質（トルースタイト、ソルバイト）', body: '焼入れした鋼を焼戻しにより組織変化させる操作。400℃くらいの焼戻しで【トルースタイト】に、600℃くらいの焼戻しで最も粘り強い【ソルバイト】に変化する。' },
+      { title: '④ マルテンパ（Ms点、下部ベイナイト）', body: '鋼を【Ms点】の直上あるいは直下の温度で一定時間保持し、表面と内部の温度差をなくしてから空冷する操作。マルテンサイトと【下部ベイナイト】の混合組織が得られ、ひずみや焼割れを小さくできる。' },
+      { title: '⑤ 高周波焼入れ（渦電流、焼入れ深さ）', body: '鋼材にコイルを巻いて高周波電流を流すことで発生する【渦電流】により、表面付近だけを加熱・急冷して硬くする表面硬化処理。通電時間により【焼入れ深さ】を調節できる。' },
+      { title: '⑥ 固溶強化（転位、合金元素の種類）', body: '炭素鋼に固溶した合金元素の周囲で格子ひずみが生じ、【転位】の運動が制限されることで強化される現象。【合金元素の種類】で作用が異なり、Si, Ti, Mo, Mnは引張強さ上昇の効果大だが、Cr, Coは小さい。' },
+      { title: '⑦ 低温用鋼（低温脆性、面心立方構造）', body: 'Feのような体心立方構造の金属で起こる【低温脆性】を改善し、低温でも使用できるようにした鋼。Al, Ni, Cu等の【面心立方構造】を持つ金属を使用することで改善する。' },
+      { title: '⑧ 焼入れ性バンド（ジョミニー曲線、H鋼）', body: '鋼材の焼入れ性を保証するために上限と下限を帯状範囲で示したもの。焼入れを行った際の【ジョミニー曲線】がこの間に入ることで焼入れ性が保証されている構造用鋼を【H鋼】と呼ぶ。' },
+      { title: '⑨ ハイス（残留オーステナイト、マルテンサイト）', body: '高速度切削に耐える高速度工具鋼の略称。焼入れ状態では多量の【残留オーステナイト】を含みそれほど硬くないため、550〜600℃の焼戻しによって【マルテンサイト】とする二次硬化を行う。' },
+      { title: '⑩ 不動態皮膜（クロム、ステンレス鋼）', body: '鉄に耐食効果のある【クロム(Cr)】を12%以上添加することで表面に形成される薄い酸化被膜。内部を保護し腐食を防ぐため、Crを主成分とした耐食鋼を【ステンレス鋼】と呼ぶ。' }
+    ];
+    let allMasked = true;
+    function renderTerms() {
+      const c = document.getElementById('terms-container');
+      c.innerHTML = TERMS.map((t, idx) => {
+        const html = t.body.replace(/【([^】]+)】/g, (_, kw) => {
+          return `<span onclick="this.dataset.open = this.dataset.open==='1'?'0':'1'; this.textContent = this.dataset.open==='1' ? '${kw}' : '［　　　］';" data-open="${allMasked ? '0' : '1'}" class="cursor-pointer px-1.5 py-0.5 mx-0.5 rounded font-bold bg-[var(--background)] border border-[var(--error)] text-[var(--error)]">${allMasked ? '［　　　］' : kw}</span>`;
+        });
+        return `<div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs leading-relaxed"><div class="font-bold text-sm mb-1">${t.title}</div><div>${html}</div></div>`;
+      }).join('');
+    }
+    function toggleAllMasks() {
+      allMasked = !allMasked;
+      renderTerms();
+    }
+
+    // Init
+    switchTab('cards');
+    setCardFilter('all');
+    updateScoreMeter();
+    genCalc1();
+    genCalc2();
+    genCalc3();
+    renderAlloyDrill();
+    renderJisDrill();
+    renderTerms();
+  </script>
 </body>
 </html>
